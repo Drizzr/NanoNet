@@ -37,7 +37,6 @@ class Network:
         optimizer.NUM_LAYERS = self.num_layers
         return optimizer
 
-
     def save(self, filename):
         """Save the neural network to the file ``filename``."""
         data = {"sizes": self.sizes,
