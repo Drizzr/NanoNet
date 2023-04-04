@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import sys
 
 
 class Optimizer:
@@ -24,7 +25,7 @@ class SGD(Optimizer):
 
         n = len(trainig_data)
 
-        random.shuffle(trainig_data)
+        #random.shuffle(trainig_data)
 
         mini_batches = []
         controll = []
@@ -40,8 +41,9 @@ class SGD(Optimizer):
                 
         data = zip(mini_batches, controll)
         for mini_batch, controll in data:
+            #print(mini_batch)
             #print(np.array(controll).shape)
-            self.update_mini_batch(mini_batch, controll, self.eta)
+            self.update_mini_batch(mini_batch, controll)
 
     def backprop(self, x, y):
         nabla_b = [np.zeros(b.shape) for b in self.BIASES]
@@ -54,11 +56,13 @@ class SGD(Optimizer):
         joined = list(zip(self.BIASES,self.WEIGHTS))
         for i in range(0, self.NUM_LAYERS-1):
             z = np.dot(activations[-1], joined[i][1]) + joined[i][0]
+            
+
             zs.append(z)
             activation = self.ACTIVATION_FUNCTIONS[i].forward(z)
             activations.append(activation)
 
-        delta = self.COST_FUNCTION.delta(zs[-1], activation[-1], y)
+        delta = self.COST_FUNCTION.delta(zs[-1], activation[-1], y, self.ACTIVATION_FUNCTIONS[-1])
         nabla_b[-1] = delta.mean(0)
         nabla_w[-1] = np.dot(delta.T, activations[-2]).T / len(y)
 
@@ -67,17 +71,23 @@ class SGD(Optimizer):
             z = zs[-l]
             sp = self.ACTIVATION_FUNCTIONS[-l].derivative(z)
             delta = np.dot(self.WEIGHTS[-l+1], delta.T).T * sp
+            if np.isnan(sp).all():
+                print(sp)
+                #print(z)
+                raise KeyboardInterrupt
             nabla_b[-l] = delta.mean(0)
             #print((self.biases[-l]-nabla_b[-l]).shape)
             nabla_w[-l] = np.dot(delta.T, activations[-l-1]).T / len(y)
         return (nabla_b, nabla_w)
 
-    def update_mini_batch(self, mini_batch, controll, eta):
+    def update_mini_batch(self, mini_batch, controll):
 
         delta_nabla_b, delta_nabla_w = self.backprop(mini_batch, controll)
 
-        self.WEIGHTS = [w-eta*nw
+        self.WEIGHTS = [w-self.eta*nw
                         for w, nw in zip(self.WEIGHTS, delta_nabla_w)]
-        self.BIASES  = [b-eta*nb
+        self.BIASES  = [b-self.eta*nb
                         for b, nb in zip(self.BIASES, delta_nabla_b)]
         
+        #print(delta_nabla_b)
+        #print(self.WEIGHTS)

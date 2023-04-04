@@ -2,9 +2,13 @@ import numpy as np
 
 
 class ReLu:
-
+    
+    @staticmethod
     def forward(z):
         return np.maximum(0, z)
     
+    @staticmethod
     def derivative(z):
-        return np.where(z<=0, 0, 1)
+        z[z<=0] = 0
+        z[z>0] = 1
+        return z

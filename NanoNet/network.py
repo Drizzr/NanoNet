@@ -4,6 +4,7 @@ import json
 import sys
 import time
 
+
 class Network:
 
     def __init__(self, sizes: list, optimizer: object, a_functions: list, cost_function: object, test_data: list = None, training_data:list = None, w_init_size: str ="small"):
@@ -20,9 +21,9 @@ class Network:
 
     def initialize_weights(self, size):
         if size.lower() == "small":
-            return [np.random.randn(x, y)/np.sqrt(x) for x, y in zip(self.sizes[:-1], self.sizes[1:])]
+            return [0.01*np.random.randn(x, y)/np.sqrt(x) for x, y in zip(self.sizes[:-1], self.sizes[1:])]
         elif size.lower() == "large":
-            return [0.1*np.random.randn(x, y) for x, y in zip(self.sizes[:-1], self.sizes[1:])]
+            return [0.01*np.random.randn(x, y) for x, y in zip(self.sizes[:-1], self.sizes[1:])]
 
     def initialize_activations(self, a):
         if len(a) == self.num_layers - 1:
@@ -49,8 +50,11 @@ class Network:
 
     def feedforward(self, a):
         joined = list(zip(self.biases, self.weights))
+        
         for i in range(0, self.num_layers-1):
             a = self.a_functions[i].forward(np.dot(joined[i][1].T, a).T+joined[i][0])
+
+        #print(a)
         return a
     
     def evaluate(self):
@@ -74,6 +78,8 @@ class Network:
 
             self.weights, self.biases = self.optimizer.WEIGHTS, self.optimizer.BIASES
 
+
+        
             if self.test_data:
                 print(f"Epoch {j+1}: {self.evaluate()} / {n_test}")
             else:
