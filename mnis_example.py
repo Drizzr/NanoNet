@@ -1,7 +1,7 @@
 from NanoNet.network import Network
 from NanoNet.optimizer import SGD
-from NanoNet.costFunction.quadratic_cost import QuadraticCost
-from NanoNet.activationFunction.sigmoid import Sigmoid
+from NanoNet.costFunction import QuadraticCost
+from NanoNet.activationFunction import Sigmoid
 from mnis_loadaer import load_data_wrapper
 
 training_data, validation_data, test_data = load_data_wrapper()
