@@ -6,6 +6,6 @@ from mnis_loadaer import load_data_wrapper
 
 training_data, validation_data, test_data = load_data_wrapper()
 
-net = Network([784, 20, 30, 10], SGD(30, 0.1),[Sigmoid(), Sigmoid(), SoftMax()], LogLikelihood(), test_data=test_data, training_data=training_data)
+net = Network([784, 100, 10], SGD(10, 3, lamb=100),[Sigmoid(), Sigmoid()], QuadraticCost(), test_data=test_data, training_data=training_data)
 
-net.train(10)
+net.train(10, monitor_training_cost=True, monitor_training_accuracy=True, monitor_test_cost=False, monitor_test_accuracy=False)

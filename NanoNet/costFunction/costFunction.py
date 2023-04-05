@@ -4,14 +4,35 @@ from NanoNet.activationFunction.sigmoid import Sigmoid
 
 
 class CostFunction:
-    pass
+
+    def __init__(self, l2=False, l1=False) -> None:
+        if l1 and l2:
+            raise KeyError
+        self.l2 = l2
+        self.l1 = l1
+
+    @staticmethod
+    def l2_regularisation_forward(weights):
+        sum = 0
+        for w in weights:
+            sum += np.sum(w*w)
+        return sum
+
+    @staticmethod
+    def l1_regularisation_forward(weights):
+        sum = 0
+        for w in weights:
+            sum += np.sum(np.abs(w))
+        return sum
+
+
 
     # l2, l1 regularisation
 
 class CrossEntropy(CostFunction):
 
-    @staticmethod
-    def forward(a, y):
+
+    def forward(self, a, y):
         """Return the cost associated with an output ``a`` and desired output
         ``y``.  Note that np.nan_to_num is used to ensure numerical
         stability.  In particular, if both ``a`` and ``y`` have a 1.0
@@ -19,8 +40,11 @@ class CrossEntropy(CostFunction):
         returns nan.  The np.nan_to_num ensures that that is converted
         to the correct value (0.0).
 
+        When only a is close to one the function returns inf making learning impossible
+
         """
-        return np.sum(np.nan_to_num(-y*np.log(a)-(1-y)*np.log(1-a)))
+
+        return np.sum(np.nan_to_num(-y*np.log(a)-(1-y)*np.log(1-a), posinf=100))
 
     @staticmethod
     def delta(z, a, y, activation=None):
@@ -34,10 +58,11 @@ class CrossEntropy(CostFunction):
 
 class LogLikelihood(CostFunction):
 
-    @staticmethod
-    def forward(a, y):
-        index = y.argmax(y)
-        return np.log(a[index])
+
+    def forward(self, a, y):
+
+        index = np.argmax(y)
+        return -np.log(a[index])
 
     @staticmethod
     def delta(z, a, y, activation=None):
@@ -46,9 +71,10 @@ class LogLikelihood(CostFunction):
 
 class QuadraticCost(CostFunction):
 
-    @staticmethod
-    def forward(a, y):
-        return 0.5*np.linalg.norm(a-y)**2
+
+    def forward(self, a, y):
+
+        return 0.5*np.linalg.norm(a-y)**2 
 
     @staticmethod
     def delta(z, a, y, activation):
