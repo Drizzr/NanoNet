@@ -110,7 +110,6 @@ class Network:
         print("-----------------------------")
         print(f"finished in {round(time.time() - start_time, 4)} seconds 🥵")       
         print("-----------------------------")
-        print(self.weights)
 
 
     def total_cost(self, data, convert=True):

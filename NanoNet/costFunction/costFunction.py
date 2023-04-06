@@ -1,5 +1,6 @@
 import numpy as np
 from NanoNet.activationFunction.sigmoid import Sigmoid
+import time
 
 
 
@@ -43,8 +44,10 @@ class CrossEntropy(CostFunction):
         When only a is close to one the function returns inf making learning impossible
 
         """
+        #print(a)
+        #time.sleep(5)
 
-        return np.sum(np.nan_to_num(-y*np.log(a)-(1-y)*np.log(1-a), posinf=100))
+        return np.sum(np.nan_to_num(-y*np.log(a)-(1-y)*np.log(1-a)))
 
     @staticmethod
     def delta(z, a, y, activation=None):
@@ -54,6 +57,12 @@ class CrossEntropy(CostFunction):
         consistent with the delta method for other cost classes.
 
         """
+        """print(a)
+        print(1)
+        print(a-y)
+        raise KeyboardInterrupt"""
+
+
         return (a-y) # only with sigmoid otherwise division through zero might occure
 
 class LogLikelihood(CostFunction):

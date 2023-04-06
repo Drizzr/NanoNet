@@ -11,7 +11,6 @@ class Optimizer:
     COST_FUNCTION = None
     NUM_LAYERS = None
 
-    evaluate = None
     n = 0
 
 
@@ -21,7 +20,6 @@ class SGD(Optimizer):
         self.mini_batch_size = mini_batch_size
         self.eta = learnig_rate
         self.lamb = lamb
-
 
         
     def minimize(self, trainig_data):
@@ -63,10 +61,10 @@ class SGD(Optimizer):
             activation = self.ACTIVATION_FUNCTIONS[i].forward(z)
             activations.append(activation)
 
-        delta = self.COST_FUNCTION.delta(zs[-1], activation[-1], y, self.ACTIVATION_FUNCTIONS[-1])
-        nabla_b[-1] = delta.mean(0)
-        nabla_w[-1] = np.dot(delta.T, activations[-2]).T / len(y)
+        delta = self.COST_FUNCTION.delta(zs[-1], activations[-1], y, self.ACTIVATION_FUNCTIONS[-1])
 
+        nabla_b[-1] = delta.mean(0)
+        nabla_w[-1] = np.dot(delta.T, activations[-2]).T / self.mini_batch_size
         for l in range(2, self.NUM_LAYERS):
             #print(1)
             z = zs[-l]
@@ -78,15 +76,16 @@ class SGD(Optimizer):
                 raise KeyboardInterrupt
             nabla_b[-l] = delta.mean(0)
             #print((self.biases[-l]-nabla_b[-l]).shape)
-            nabla_w[-l] = np.dot(delta.T, activations[-l-1]).T / len(y)
+            nabla_w[-l] = np.dot(delta.T, activations[-l-1]).T / self.mini_batch_size
         return (nabla_b, nabla_w)
 
     def update_mini_batch(self, mini_batch, controll):
 
 
         delta_nabla_b, delta_nabla_w = self.backprop(mini_batch, controll)
+
         if self.COST_FUNCTION.l2:
-            weight_decay = (1-(self.eta*self.lamb)/(self.n))
+            weight_decay = 1-self.eta*(self.lamb/self.n)
             #print(weight_decay)
             self.WEIGHTS = [weight_decay*w-self.eta*nw
                         for w, nw in zip(self.WEIGHTS, delta_nabla_w)]
