@@ -7,7 +7,7 @@ import time
 
 class Network:
 
-    def __init__(self, sizes: list, optimizer: object, a_functions: list, cost_function: object, test_data: list = None, training_data:list = None, w_init_size: str ="small"):
+    def __init__(self, sizes: list, mini_batch_size : int ,optimizer: object, a_functions: list, cost_function: object, test_data: list = None, training_data:list = None, w_init_size: str ="small"):
         self.num_layers = len(sizes)
         self.sizes = sizes
         self.biases = [np.random.randn(y) for y in sizes[1:]]
@@ -18,7 +18,7 @@ class Network:
         self.n_trainig = len(training_data)
         self.a_functions = self.initialize_activations(a_functions)
 
-        self.optimizer = self.initialize_optimizer(optimizer, cost_function)
+        self.optimizer = self.initialize_optimizer(optimizer, cost_function, mini_batch_size)
 
 
     def initialize_weights(self, size):
@@ -32,14 +32,14 @@ class Network:
             return a
         raise ValueError
     
-    def initialize_optimizer(self, optimizer, cost_function):
+    def initialize_optimizer(self, optimizer, cost_function, mini_batch_size):
         optimizer.WEIGHTS = self.weights
         optimizer.BIASES = self.biases
         optimizer.ACTIVATION_FUNCTIONS = self.a_functions
         optimizer.COST_FUNCTION = cost_function
         optimizer.NUM_LAYERS = self.num_layers
         optimizer.n = len(self.training_data)
-        print(optimizer.lamb)
+        optimizer.MINI_BATCH_SIZE = mini_batch_size
         return optimizer
 
     def save(self, filename):
