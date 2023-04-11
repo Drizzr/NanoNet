@@ -10,14 +10,6 @@ class RMSPromp(Optimizer):
     def __init__(self, eta, beta=0.99):
         self.eta = eta
         self.beta = beta
-
-    def minimize(self, trainig_data):
-
-        #random.shuffle(trainig_data)
-                
-        data = self.create_minibatch(trainig_data)
-        for mini_batch, controll in data:
-            self.update_mini_batch(mini_batch, controll)
     
 
     def update_mini_batch(self, mini_batch, controll):

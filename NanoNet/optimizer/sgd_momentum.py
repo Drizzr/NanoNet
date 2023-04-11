@@ -6,18 +6,9 @@ class SGD_Momentum(Optimizer):
     vel_b = None
 
     def __init__(self, eta, beta=0.9):
-        super().__init__()
         self.beta = beta
         self.eta = eta
         
-
-    def minimize(self, trainig_data):
-
-        #random.shuffle(trainig_data)
-                
-        data = self.create_minibatch(trainig_data)
-        for mini_batch, controll in data:
-            self.update_mini_batch(mini_batch, controll)
     
     def update_mini_batch(self, mini_batch, controll):
         if not self.vel_w:

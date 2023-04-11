@@ -2,25 +2,13 @@ from .rms_promp import RMSPromp
 from .sgd_momentum import SGD_Momentum
 import numpy as np
 
+
 class ADAM(SGD_Momentum, RMSPromp):
-    vel_w = None
-    vel_b = None
-    estimated_crude_variance_w = None
-    estimated_crude_variance_b = None
-    EPSILON = 10e-7
 
     def __init__(self, eta, beta1=0.9, beta2=0.99):
         self.eta = eta
         self.beta1 = beta1
         self.beta2 = beta2
-    
-    def minimize(self, trainig_data):
-
-        #random.shuffle(trainig_data)
-                
-        data = self.create_minibatch(trainig_data)
-        for mini_batch, controll in data:
-            self.update_mini_batch(mini_batch, controll)
     
 
     def update_mini_batch(self, mini_batch, controll):

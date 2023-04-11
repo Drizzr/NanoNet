@@ -6,6 +6,8 @@ import time
 from werkzeug.utils import import_string
 from copy import deepcopy
 from NanoNet.Exceptions import LayerConfigError, NetworkConfigError, HyperparamterError, RegularizationError
+import matplotlib.pyplot as plt
+
 
 
 class Network:
@@ -29,6 +31,9 @@ class Network:
         self.a_functions = self.initialize_activations(a_functions)
         self.cost_function = cost_function
         self.mode_train = mode_train
+        self.cost_function.l1 = l1
+        self.cost_function.l2 = l2
+
 
         if l1 and l2:
             raise RegularizationError("Only one regularization-method can be used at the same time!")
@@ -72,8 +77,6 @@ class Network:
         optimizer.NUM_LAYERS = self.num_layers
         optimizer.n = len(self.training_data)
         optimizer.MINI_BATCH_SIZE = mini_batch_size
-        optimizer.L1 = l1
-        optimizer.L2 = l2
         return optimizer
 
 
@@ -83,7 +86,6 @@ class Network:
         for i in range(0, self.num_layers-1):
             a = self.a_functions[i].forward(np.dot(joined[i][1].T, a).T+joined[i][0])
 
-        #print(a)
         return a
     
     def evaluate(self, data, convert=True):
@@ -100,7 +102,7 @@ class Network:
         return sum(int(x == y) for (x, y) in results)
     
 
-    def train(self, epochs, monitor_training_cost=False, monitor_training_accuracy=False, monitor_test_cost=True, monitor_test_accuracy=True):
+    def train(self, epochs, monitor_training_cost=False, monitor_training_accuracy=False, monitor_test_cost=True, monitor_test_accuracy=True, plot=True):
 
         if self.mode_train:
             if not self.optimizer or not self.training_data or not self.optimizer.MINI_BATCH_SIZE:
@@ -127,8 +129,14 @@ class Network:
                         print(f"Epoch {j+1}: Cost on training data: {cost}")
                     if monitor_training_accuracy:
                         accuracy = self.evaluate(self.training_data, convert=False)
-                        percent = round((accuracy/self.n_trainig)*100, 2)
-                        training_accuracy.append(accuracy)
+                        percent = round((accuracy/self.n_trainig)*100, 3)
+                        training_accuracy.append(percent)
+
+                        if not monitor_test_accuracy and accuracy/self.n_trainig < self.best_accuracy:
+                            self.best_weights = deepcopy(self.weights)
+                            self.best_biases = deepcopy(self.biases)
+                            self.best_accuracy = accuracy/self.n_trainig
+
                         print(f"Epoch {j+1}: {accuracy} / {self.n_trainig} ({percent}%)")
                     if monitor_test_cost and self.test_data:
                         cost = self.total_cost(self.test_data)
@@ -136,19 +144,32 @@ class Network:
                         print(f"Epoch {j+1}: Cost on test data: {cost}")
                     if monitor_test_accuracy and self.test_data:
                         accuracy = self.evaluate(self.test_data)
-                        percent = round((accuracy/self.n_test)*100, 2)
-                        test_accuracy.append(accuracy)
+                        percent = round((accuracy/self.n_test)*100, 3)
+                        test_accuracy.append(percent)
 
-                        if percent < self.best_accuracy:
+                        if accuracy/self.n_trainig < self.best_accuracy:
                             self.best_weights = deepcopy(self.weights)
                             self.best_biases = deepcopy(self.biases)
-                            self.best_accuracy = percent
+                            self.best_accuracy = accuracy/self.n_trainig
 
                         print(f"Epoch {j+1}: {accuracy} / {self.n_test} ({round(percent)}%)")
                 
                 print("-----------------------------")
                 print(f"finished in {round(time.time() - start_time, 4)} seconds 🥵")       
                 print("-----------------------------")
+
+                if plot:
+
+                    plt.figure(figsize=(9, 3))
+
+                    plt.subplot(131)
+                    plt.plot(test_accuracy)
+                    plt.plot(training_accuracy)
+                    plt.subplot(132)
+                    plt.plot(test_cost)
+                    plt.plot(training_cost)
+                    plt.show()
+
         else:
             raise NetworkConfigError("In order to train the network mode_train has to be set to True")
 
@@ -167,22 +188,20 @@ class Network:
                 y = vectorized_result(y, 10)
             cost += self.cost_function.forward(a, y)/ len(data)
         
-        """if self.optimizer.L2:
+        """if self.cost_function.l2:
             cost += (self.cost_function.l2_regularisation_forward(self.weights)*self.optimizer.lamb/2)/ len(data)
-        elif self.optimizer.L1:
+        elif self.cost_function.l1:
             cost += (self.cost_function.l1_regularisation_forward(self.weights)*self.optimizer.lamb)/ len(data)"""
         
         return round(cost,4)
     
     
-    def save(self, filename, best_on_test_data = False):
-        """Save the neural network to the file ``filename``."""
-        if best_on_test_data:
-            weights = self.best_weights
-            biases = self.best_biases
-        else:
-            weights = self.weights
-            biases = self.biases
+    def save(self, filename):
+        """
+        Save the neural network to the file ``filename``.
+        """
+        weights = self.best_weights if self.best_weights else self.weights
+        biases = self.best_biases if self.best_biases else self.biases
 
         data = {"sizes": self.sizes,
                 "weights": [w.tolist() for w in weights],
@@ -196,12 +215,10 @@ class Network:
         print(f"Saved parameters to {filename}!")
 
 
-        
-
 def load_from_file(filename, trainig_data, test_data):
-    """Load a neural network from the file ``filename``.  Returns an
+    """
+    Load a neural network from the file ``filename``.  Returns an
     instance of Network.
-
     """
     with open(filename, "r") as f:
         data = json.load(f)
@@ -218,10 +235,12 @@ def load_from_file(filename, trainig_data, test_data):
         
 
 def vectorized_result(j, length):
-    """Return a 10-dimensional unit vector with a 1.0 in the jth
+    """
+    Return a 10-dimensional unit vector with a 1.0 in the jth
     position and zeroes elsewhere.  This is used to convert a digit
     (0...9) into a corresponding desired output from the neural
-    network."""
+    network.
+    """
     e = np.zeros(length)
     e[j] = 1.0
     return e

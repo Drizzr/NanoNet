@@ -10,10 +10,7 @@ class Optimizer:
     MINI_BATCH_SIZE = None
 
     n = None
-    L1 = False
-    L2 = False
 
-    
 
     def backprop(self, x, y):
         nabla_b = [np.zeros(b.shape) for b in self.BIASES]
@@ -65,3 +62,15 @@ class Optimizer:
             controll.append(np.array(controll_batch))
         
         return zip(mini_batches, controll)
+    
+
+    def minimize(self, trainig_data):
+
+        #random.shuffle(trainig_data)
+                
+        data = self.create_minibatch(trainig_data)
+        for mini_batch, controll in data:
+            self.update_mini_batch(mini_batch, controll)
+
+        
+    
