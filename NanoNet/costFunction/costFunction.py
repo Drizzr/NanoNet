@@ -32,8 +32,10 @@ class CostFunction:
 
 class CrossEntropy(CostFunction):
 
+    __name__ = "CrossEntropy"
 
-    def forward(self, a, y):
+    @staticmethod
+    def forward(a, y):
         """Return the cost associated with an output ``a`` and desired output
         ``y``.  Note that np.nan_to_num is used to ensure numerical
         stability.  In particular, if both ``a`` and ``y`` have a 1.0
@@ -67,8 +69,10 @@ class CrossEntropy(CostFunction):
 
 class LogLikelihood(CostFunction):
 
+    __name__ = "LogLikelihood"
 
-    def forward(self, a, y):
+    @staticmethod
+    def forward(a, y):
 
         index = np.argmax(y)
         return -np.log(a[index])
@@ -80,8 +84,10 @@ class LogLikelihood(CostFunction):
 
 class QuadraticCost(CostFunction):
 
+    __name__ = "QuadraticCost"
 
-    def forward(self, a, y):
+    @staticmethod
+    def forward(a, y):
 
         return 0.5*np.linalg.norm(a-y)**2 
 

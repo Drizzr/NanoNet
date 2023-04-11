@@ -1,8 +1,11 @@
 import numpy as np
 
 class Sigmoid:
-    
-    def forward(self, z):
+
+    __name__ = "Sigmoid"
+
+    @staticmethod
+    def forward(z):
         #if not np.all(1.0/(1.0+np.exp(-z))):
             #print(1.0/(1.0+np.exp(-z)))
 
@@ -12,6 +15,7 @@ class Sigmoid:
 
         return 1.0/(1.0+np.exp(-z))
     
-    def derivative(self, z):
+    @staticmethod
+    def derivative(z):
 
-        return self.forward(z)*(1-self.forward(z))
+        return 1.0/(1.0+np.exp(-z))*(1-1.0/(1.0+np.exp(-z)))

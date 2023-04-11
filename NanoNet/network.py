@@ -3,11 +3,12 @@ import time
 import json
 import sys
 import time
+from werkzeug.utils import import_string
 
 
 class Network:
 
-    def __init__(self, sizes: list, mini_batch_size : int ,optimizer: object, a_functions: list, cost_function: object, test_data: list = None, training_data:list = None, w_init_size: str ="small"):
+    def __init__(self, sizes: list , a_functions: list, cost_function: object, optimizer: object = None, mini_batch_size : int = None, test_data: list = None, training_data:list = None, w_init_size: str ="small"):
         self.num_layers = len(sizes)
         self.sizes = sizes
         self.biases = [np.random.randn(y) for y in sizes[1:]]
@@ -17,8 +18,10 @@ class Network:
         self.n_test = len(test_data)
         self.n_trainig = len(training_data)
         self.a_functions = self.initialize_activations(a_functions)
+        self.cost_function = cost_function
 
-        self.optimizer = self.initialize_optimizer(optimizer, cost_function, mini_batch_size)
+        if optimizer and cost_function:
+            self.optimizer = self.initialize_optimizer(optimizer, mini_batch_size)
 
 
     def initialize_weights(self, size):
@@ -32,25 +35,16 @@ class Network:
             return a
         raise ValueError
     
-    def initialize_optimizer(self, optimizer, cost_function, mini_batch_size):
+    def initialize_optimizer(self, optimizer, mini_batch_size):
         optimizer.WEIGHTS = self.weights
         optimizer.BIASES = self.biases
         optimizer.ACTIVATION_FUNCTIONS = self.a_functions
-        optimizer.COST_FUNCTION = cost_function
+        optimizer.COST_FUNCTION = self.cost_function
         optimizer.NUM_LAYERS = self.num_layers
         optimizer.n = len(self.training_data)
         optimizer.MINI_BATCH_SIZE = mini_batch_size
         return optimizer
 
-    def save(self, filename):
-        """Save the neural network to the file ``filename``."""
-        data = {"sizes": self.sizes,
-                "weights": [w.tolist() for w in self.weights],
-                "biases": [b.tolist() for b in self.biases],
-                "cost": str(self.cost.__name__)}
-        f = open(filename, "w")
-        json.dump(data, f)
-        f.close()
 
     def feedforward(self, a):
         joined = list(zip(self.biases, self.weights))
@@ -124,26 +118,40 @@ class Network:
             a = self.feedforward(x)
             if convert:
                 y = vectorized_result(y, 10)
-            cost += self.optimizer.COST_FUNCTION.forward(a, y)/ len(data)
+            cost += self.cost_function.forward(a, y)/ len(data)
         
-        if self.optimizer.COST_FUNCTION.l2:
-            cost += (self.optimizer.COST_FUNCTION.l2_regularisation_forward(self.weights)*self.optimizer.lamb/2)/ len(data)
-        elif self.optimizer.COST_FUNCTION.l1:
-            cost += (self.optimizer.COST_FUNCTION.l1_regularisation_forward(self.weights)*self.optimizer.lamb)/ len(data)
+        if self.cost_function.l2:
+            cost += (self.cost_function.l2_regularisation_forward(self.weights)*self.optimizer.lamb/2)/ len(data)
+        elif self.cost_function.l1:
+            cost += (self.cost_function.l1_regularisation_forward(self.weights)*self.optimizer.lamb)/ len(data)
         
         return round(cost,4)
+    
+    
+    def save(self, filename):
+        """Save the neural network to the file ``filename``."""
+        data = {"sizes": self.sizes,
+                "weights": [w.tolist() for w in self.weights],
+                "biases": [b.tolist() for b in self.biases],
+                "activation_functions": [str(function.__name__) for function in self.a_functions],
+                "cost_function": str(self.optimizer.COST_FUNCTION.__name__)}
+        
+        with open(filename, "w") as f:
+            json.dump(data, f)
         
 
-def load_from_file(filename):
+def load_from_file(filename, trainig_data, test_data):
     """Load a neural network from the file ``filename``.  Returns an
     instance of Network.
 
     """
-    f = open(filename, "r")
-    data = json.load(f)
-    f.close()
-    cost = getattr(sys.modules[__name__], data["cost"])
-    net = Network(data["sizes"], cost=cost)
+    with open(filename, "r") as f:
+        data = json.load(f)
+        cost_function = data["cost_function"]
+        activation_functions = data["activation_functions"]
+        activation_functions = [import_string(f"NanoNet.activationFunction.{function}") for function in activation_functions]
+        cost_function = import_string(f"NanoNet.costFunction.{cost_function}")
+    net = Network(data["sizes"], activation_functions, cost_function, training_data=trainig_data, test_data=test_data)
     net.weights = [np.array(w) for w in data["weights"]]
     net.biases = [np.array(b) for b in data["biases"]]
     return net

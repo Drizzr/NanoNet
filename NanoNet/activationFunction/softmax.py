@@ -2,6 +2,8 @@ import numpy as np
 
 class SoftMax():
 
+    __name__ = "SoftMax"
+
     @staticmethod
     def forward(z):
         if z.ndim == 1:

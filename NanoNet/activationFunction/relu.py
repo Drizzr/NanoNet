@@ -3,6 +3,8 @@ import numpy as np
 
 class ReLu:
     
+    __name__ = "ReLu"
+    
     @staticmethod
     def forward(z):
         return np.maximum(0, z)
