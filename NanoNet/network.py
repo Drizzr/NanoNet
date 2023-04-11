@@ -4,10 +4,15 @@ import json
 import sys
 import time
 from werkzeug.utils import import_string
+from copy import deepcopy
 from NanoNet.Exceptions import LayerConfigError, NetworkConfigError, HyperparamterError, RegularizationError
 
 
 class Network:
+
+    best_weights = None
+    best_biases = None
+    best_accuracy = 0
 
     def __init__(self, sizes: list , a_functions: list, cost_function: object, optimizer: object = None, 
                  mini_batch_size : int = None, test_data: list = None, training_data : list = None, 
@@ -95,7 +100,7 @@ class Network:
         return sum(int(x == y) for (x, y) in results)
     
 
-    def train(self, epochs, monitor_training_cost=True, monitor_training_accuracy=True, monitor_test_cost=True, monitor_test_accuracy=True):
+    def train(self, epochs, monitor_training_cost=False, monitor_training_accuracy=False, monitor_test_cost=True, monitor_test_accuracy=True):
 
         if self.mode_train:
             if not self.optimizer or not self.training_data or not self.optimizer.MINI_BATCH_SIZE:
@@ -122,16 +127,24 @@ class Network:
                         print(f"Epoch {j+1}: Cost on training data: {cost}")
                     if monitor_training_accuracy:
                         accuracy = self.evaluate(self.training_data, convert=False)
+                        percent = round((accuracy/self.n_trainig)*100, 2)
                         training_accuracy.append(accuracy)
-                        print(f"Epoch {j+1}: {accuracy} / {self.n_trainig} ({round((accuracy/self.n_trainig)*100, 2)}%)")
+                        print(f"Epoch {j+1}: {accuracy} / {self.n_trainig} ({percent}%)")
                     if monitor_test_cost and self.test_data:
                         cost = self.total_cost(self.test_data)
                         test_cost.append(cost)
                         print(f"Epoch {j+1}: Cost on test data: {cost}")
                     if monitor_test_accuracy and self.test_data:
                         accuracy = self.evaluate(self.test_data)
+                        percent = round((accuracy/self.n_test)*100, 2)
                         test_accuracy.append(accuracy)
-                        print(f"Epoch {j+1}: {accuracy} / {self.n_test} ({round((accuracy/self.n_test)*100, 2)}%)")
+
+                        if percent < self.best_accuracy:
+                            self.best_weights = deepcopy(self.weights)
+                            self.best_biases = deepcopy(self.biases)
+                            self.best_accuracy = percent
+
+                        print(f"Epoch {j+1}: {accuracy} / {self.n_test} ({round(percent)}%)")
                 
                 print("-----------------------------")
                 print(f"finished in {round(time.time() - start_time, 4)} seconds 🥵")       
@@ -154,19 +167,26 @@ class Network:
                 y = vectorized_result(y, 10)
             cost += self.cost_function.forward(a, y)/ len(data)
         
-        if self.optimizer.L2:
+        """if self.optimizer.L2:
             cost += (self.cost_function.l2_regularisation_forward(self.weights)*self.optimizer.lamb/2)/ len(data)
         elif self.optimizer.L1:
-            cost += (self.cost_function.l1_regularisation_forward(self.weights)*self.optimizer.lamb)/ len(data)
+            cost += (self.cost_function.l1_regularisation_forward(self.weights)*self.optimizer.lamb)/ len(data)"""
         
         return round(cost,4)
     
     
-    def save(self, filename):
+    def save(self, filename, best_on_test_data = False):
         """Save the neural network to the file ``filename``."""
+        if best_on_test_data:
+            weights = self.best_weights
+            biases = self.best_biases
+        else:
+            weights = self.weights
+            biases = self.biases
+
         data = {"sizes": self.sizes,
-                "weights": [w.tolist() for w in self.weights],
-                "biases": [b.tolist() for b in self.biases],
+                "weights": [w.tolist() for w in weights],
+                "biases": [b.tolist() for b in biases],
                 "activation_functions": [str(function.__name__) for function in self.a_functions],
                 "cost_function": str(self.optimizer.COST_FUNCTION.__name__)}
         

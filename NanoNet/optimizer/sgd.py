@@ -22,7 +22,7 @@ class SGD(Optimizer):
 
         delta_nabla_b, delta_nabla_w = self.backprop(mini_batch, controll)
 
-        if self.COST_FUNCTION.l2:
+        """if self.COST_FUNCTION.l2:
             weight_decay = 1-self.eta*(self.lamb/self.n)
             #print(weight_decay)
             self.WEIGHTS = [weight_decay*w-self.eta*nw
@@ -32,8 +32,8 @@ class SGD(Optimizer):
             self.WEIGHTS = [w-(np.sign(w)*self.eta*self.lamb)/(self.n)-self.eta*nw
                         for w, nw in zip(self.WEIGHTS, delta_nabla_w)]
         
-        else:
-            self.WEIGHTS = [w-self.eta*nw
+        else:"""
+        self.WEIGHTS = [w-self.eta*nw
                         for w, nw in zip(self.WEIGHTS, delta_nabla_w)]
 
         
