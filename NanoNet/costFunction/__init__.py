@@ -1,1 +1,3 @@
-from .costFunction import QuadraticCost, CrossEntropy, LogLikelihood
+from .cross_entropy import CrossEntropy
+from .log_likelihood import LogLikelihood
+from .quadratic_cost import QuadraticCost

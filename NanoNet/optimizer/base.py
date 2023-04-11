@@ -10,6 +10,8 @@ class Optimizer:
     MINI_BATCH_SIZE = None
 
     n = None
+    L1 = False
+    L2 = False
 
     
 

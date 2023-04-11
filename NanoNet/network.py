@@ -4,11 +4,15 @@ import json
 import sys
 import time
 from werkzeug.utils import import_string
+from NanoNet.Exceptions import LayerConfigError, NetworkConfigError, HyperparamterError, RegularizationError
 
 
 class Network:
 
-    def __init__(self, sizes: list , a_functions: list, cost_function: object, optimizer: object = None, mini_batch_size : int = None, test_data: list = None, training_data:list = None, w_init_size: str ="small"):
+    def __init__(self, sizes: list , a_functions: list, cost_function: object, optimizer: object = None, 
+                 mini_batch_size : int = None, test_data: list = None, training_data : list = None, 
+                 l1 : bool = False, l2 : bool = False, w_init_size: str ="small", mode_train : bool = True):
+        
         self.num_layers = len(sizes)
         self.sizes = sizes
         self.biases = [np.random.randn(y) for y in sizes[1:]]
@@ -19,9 +23,28 @@ class Network:
         self.n_trainig = len(training_data)
         self.a_functions = self.initialize_activations(a_functions)
         self.cost_function = cost_function
+        self.mode_train = mode_train
 
-        if optimizer and cost_function:
-            self.optimizer = self.initialize_optimizer(optimizer, mini_batch_size)
+        if l1 and l2:
+            raise RegularizationError("Only one regularization-method can be used at the same time!")
+
+        if cost_function.__name__ == "LogLikelihood" and a_functions[-1].__name__ != "SoftMax":
+            raise NetworkConfigError("The LogLikelihood cost-function can only be used in combination with a sofMax-ouput layer!")
+
+        if cost_function.__name__ == "CrossEntropy" and a_functions[-1].__name__ != "Sigmoid":
+            raise NetworkConfigError("The CrossEntropy cost-function can only be used in combination with a sigmoid-ouput layer!")
+        
+        if a_functions[-1].__name__ == "SoftMax" and cost_function.__name__ != "LogLikelihood":
+            raise NetworkConfigError("The SoftMax activation-function can only be used in combination with the Loglikelihood-cost-function!")
+        
+        for i in range(self.num_layers-1):
+            if a_functions[i].__name__ == "SoftMax" and i != self.num_layers - 2:
+                raise NetworkConfigError("The SoftMax activation-function can only be used in the output-layer!")
+
+        if mode_train:
+            if not optimizer or not mini_batch_size or not training_data:
+                raise NetworkConfigError("When mode_train is set to True you have to provide an optimizer, a mini-batch-size and a trainig-dataset!")
+            self.optimizer = self.initialize_optimizer(optimizer, mini_batch_size, l1, l2)
 
 
     def initialize_weights(self, size):
@@ -33,9 +56,10 @@ class Network:
     def initialize_activations(self, a):
         if len(a) == self.num_layers - 1:
             return a
-        raise ValueError
+        raise LayerConfigError("Structure in size attribute and provided activation-functions do not match. (First layer needs no activation-function) \
+                            Note that if the network has n-layers you have to define n-1 activation Functions")
     
-    def initialize_optimizer(self, optimizer, mini_batch_size):
+    def initialize_optimizer(self, optimizer, mini_batch_size, l1, l2):
         optimizer.WEIGHTS = self.weights
         optimizer.BIASES = self.biases
         optimizer.ACTIVATION_FUNCTIONS = self.a_functions
@@ -43,6 +67,8 @@ class Network:
         optimizer.NUM_LAYERS = self.num_layers
         optimizer.n = len(self.training_data)
         optimizer.MINI_BATCH_SIZE = mini_batch_size
+        optimizer.L1 = l1
+        optimizer.L2 = l2
         return optimizer
 
 
@@ -70,40 +96,48 @@ class Network:
     
 
     def train(self, epochs, monitor_training_cost=True, monitor_training_accuracy=True, monitor_test_cost=True, monitor_test_accuracy=True):
-        start_time = time.time()
 
-        print(f"Epoch {0}: {self.evaluate(self.test_data)} / {self.n_test} ")
+        if self.mode_train:
+            if not self.optimizer or not self.training_data or not self.optimizer.MINI_BATCH_SIZE:
+                raise NetworkConfigError("When mode_train is set to True you have to provide an optimizer, a mini-batch-size and a trainig-dataset! \
+                                        If you are trying to train a network that was preloaded. Set mode_train to True and run the intialize_optimizer function!")
+            else:
+                start_time = time.time()
 
-        test_cost, test_accuracy = [], []
-        training_cost, training_accuracy = [], []
+                print(f"Epoch {0}: {self.evaluate(self.test_data)} / {self.n_test} ")
 
-        for j in range(epochs):
-            self.optimizer.minimize(self.training_data)
+                test_cost, test_accuracy = [], []
+                training_cost, training_accuracy = [], []
 
-            self.weights, self.biases = self.optimizer.WEIGHTS, self.optimizer.BIASES
+                for j in range(epochs):
+                    self.optimizer.minimize(self.training_data)
+
+                    self.weights, self.biases = self.optimizer.WEIGHTS, self.optimizer.BIASES
 
 
-            print(f"Epoch {j+1} complete:")
-            if monitor_training_cost:
-                cost = self.total_cost(self.training_data, convert=False)
-                training_cost.append(cost)
-                print(f"Epoch {j+1}: Cost on training data: {cost}")
-            if monitor_training_accuracy:
-                accuracy = self.evaluate(self.training_data, convert=False)
-                training_accuracy.append(accuracy)
-                print(f"Epoch {j+1}: {accuracy} / {self.n_trainig} ({round((accuracy/self.n_trainig)*100, 2)}%)")
-            if monitor_test_cost:
-                cost = self.total_cost(self.test_data)
-                test_cost.append(cost)
-                print(f"Epoch {j+1}: Cost on test data: {cost}")
-            if monitor_test_accuracy:
-                accuracy = self.evaluate(self.test_data)
-                test_accuracy.append(accuracy)
-                print(f"Epoch {j+1}: {accuracy} / {self.n_test} ({round((accuracy/self.n_test)*100, 2)}%)")
-        
-        print("-----------------------------")
-        print(f"finished in {round(time.time() - start_time, 4)} seconds 🥵")       
-        print("-----------------------------")
+                    print(f"Epoch {j+1} complete:")
+                    if monitor_training_cost:
+                        cost = self.total_cost(self.training_data, convert=False)
+                        training_cost.append(cost)
+                        print(f"Epoch {j+1}: Cost on training data: {cost}")
+                    if monitor_training_accuracy:
+                        accuracy = self.evaluate(self.training_data, convert=False)
+                        training_accuracy.append(accuracy)
+                        print(f"Epoch {j+1}: {accuracy} / {self.n_trainig} ({round((accuracy/self.n_trainig)*100, 2)}%)")
+                    if monitor_test_cost and self.test_data:
+                        cost = self.total_cost(self.test_data)
+                        test_cost.append(cost)
+                        print(f"Epoch {j+1}: Cost on test data: {cost}")
+                    if monitor_test_accuracy and self.test_data:
+                        accuracy = self.evaluate(self.test_data)
+                        test_accuracy.append(accuracy)
+                        print(f"Epoch {j+1}: {accuracy} / {self.n_test} ({round((accuracy/self.n_test)*100, 2)}%)")
+                
+                print("-----------------------------")
+                print(f"finished in {round(time.time() - start_time, 4)} seconds 🥵")       
+                print("-----------------------------")
+        else:
+            raise NetworkConfigError("In order to train the network mode_train has to be set to True")
 
 
     def total_cost(self, data, convert=True):
@@ -120,9 +154,9 @@ class Network:
                 y = vectorized_result(y, 10)
             cost += self.cost_function.forward(a, y)/ len(data)
         
-        if self.cost_function.l2:
+        if self.optimizer.L2:
             cost += (self.cost_function.l2_regularisation_forward(self.weights)*self.optimizer.lamb/2)/ len(data)
-        elif self.cost_function.l1:
+        elif self.optimizer.L1:
             cost += (self.cost_function.l1_regularisation_forward(self.weights)*self.optimizer.lamb)/ len(data)
         
         return round(cost,4)
@@ -138,6 +172,10 @@ class Network:
         
         with open(filename, "w") as f:
             json.dump(data, f)
+
+        print(f"Saved parameters to {filename}!")
+
+
         
 
 def load_from_file(filename, trainig_data, test_data):
@@ -151,9 +189,11 @@ def load_from_file(filename, trainig_data, test_data):
         activation_functions = data["activation_functions"]
         activation_functions = [import_string(f"NanoNet.activationFunction.{function}") for function in activation_functions]
         cost_function = import_string(f"NanoNet.costFunction.{cost_function}")
-    net = Network(data["sizes"], activation_functions, cost_function, training_data=trainig_data, test_data=test_data)
+    net = Network(data["sizes"], activation_functions, cost_function, training_data=trainig_data, test_data=test_data, mode_train=False)
     net.weights = [np.array(w) for w in data["weights"]]
     net.biases = [np.array(b) for b in data["biases"]]
+
+    print("Successfully loaded the Network 🚀!")
     return net
         
 
