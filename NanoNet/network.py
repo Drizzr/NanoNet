@@ -44,7 +44,7 @@ class Network:
         if cost_function.__name__ == "CrossEntropy" and a_functions[-1].__name__ != "Sigmoid":
             raise NetworkConfigError("The CrossEntropy cost-function can only be used in combination with a sigmoid-ouput layer!")
         
-        if a_functions[-1].__name__ == "SoftMax" and cost_function.__name__ != "LogLikelihood":
+        if a_functions[-1].__name__ == "SoftMax" and cost_function.__name__ not in ["CategorialCrossEntropy", "LogLikelihood"]:
             raise NetworkConfigError("The SoftMax activation-function can only be used in combination with the Loglikelihood-cost-function!")
         
         for i in range(self.num_layers-1):
