@@ -18,7 +18,8 @@ class Network:
 
     def __init__(self, sizes: list , a_functions: list, cost_function: object, optimizer: object = None, 
                  mini_batch_size : int = None, test_data: list = None, training_data : list = None, 
-                 l1 : bool = False, l2 : bool = False, w_init_size: str ="small", mode_train : bool = True):
+                 l1 : bool = False, l2 : bool = False, w_init_size: str ="small", mode_train : bool = True,
+                 classify : bool = True):
         
         self.num_layers = len(sizes)
         self.sizes = sizes
@@ -33,6 +34,8 @@ class Network:
         self.mode_train = mode_train
         self.cost_function.l1 = l1
         self.cost_function.l2 = l2
+        
+        self.classify = classify
 
 
         if l1 and l2:
@@ -93,16 +96,25 @@ class Network:
         network outputs the correct result. Note that the neural
         network's output is assumed to be the index of whichever
         neuron in the final layer has the highest activation."""
-        if convert:
-            results = [(np.argmax(self.feedforward(x)), y)
-                       for (x, y) in data]
-        else:
-            results = [(np.argmax(self.feedforward(x)), np.argmax(y))
+        if self.classify:
+            if convert:
+                results = [(np.argmax(self.feedforward(x)), y)
                         for (x, y) in data]
+            else:
+                results = [(np.argmax(self.feedforward(x)), np.argmax(y))
+                            for (x, y) in data]
+        else:
+           """
+           if convert:
+                results = [(np.argmax(self.feedforward(x)), y)
+                        for (x, y) in data]
+            else:
+                results = [(np.argmax(self.feedforward(x)), np.argmax(y))
+                            for (x, y) in data] """
         return sum(int(x == y) for (x, y) in results)
     
 
-    def train(self, epochs, monitor_training_cost=False, monitor_training_accuracy=False, monitor_test_cost=True, monitor_test_accuracy=True, plot=True):
+    def train(self, epochs, monitor_training_cost=False, monitor_training_accuracy=False, monitor_test_cost=True, monitor_test_accuracy=True, plot=True, trainig_convert = False, test_convert = True):
 
         if self.mode_train:
             if not self.optimizer or not self.training_data or not self.optimizer.MINI_BATCH_SIZE:
@@ -112,9 +124,9 @@ class Network:
                 start_time = time.time()
 
                 if self.test_data:
-                    print(f"Epoch {0}: {self.evaluate(self.test_data)} / {self.n_test} ")
+                    print(f"Epoch {0}: {self.evaluate(self.test_data, convert=test_convert)} / {self.n_test} ")
                 else:
-                    print(f"Epoch {0}: {self.evaluate(self.training_data)} / {self.n_trainig} ")
+                    print(f"Epoch {0}: {self.evaluate(self.training_data, convert=trainig_convert)} / {self.n_trainig} ")
 
                 test_cost, test_accuracy = [], []
                 training_cost, training_accuracy = [], []
@@ -132,7 +144,7 @@ class Network:
                         print(f"Epoch {j+1}: Cost on training data: {cost}")
 
                     if monitor_training_accuracy:
-                        accuracy = self.evaluate(self.training_data, convert=False)
+                        accuracy = self.evaluate(self.training_data, convert=trainig_convert)
                         percent = round((accuracy/self.n_trainig)*100, 3)
                         training_accuracy.append(percent)
 
@@ -143,11 +155,11 @@ class Network:
 
                         print(f"Epoch {j+1}: {accuracy} / {self.n_trainig} ({percent}%)")
                     if monitor_test_cost and self.test_data:
-                        cost = self.total_cost(self.test_data)
+                        cost = self.total_cost(self.test_data, convert=test_convert)
                         test_cost.append(cost)
                         print(f"Epoch {j+1}: Cost on test data: {cost}")
                     if monitor_test_accuracy and self.test_data:
-                        accuracy = self.evaluate(self.test_data)
+                        accuracy = self.evaluate(self.test_data, convert=test_convert)
                         percent = round((accuracy/self.n_test)*100, 3)
                         test_accuracy.append(percent)
 
