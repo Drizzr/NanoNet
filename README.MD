@@ -3,11 +3,11 @@ A custom built neural network libary
 
 ## Project Overview 
 This is a personal project of mine wich was heavily inspired by 
-[the free e-book of Aaron Courville](http://neuralnetworksanddeeplearning.com). It implements a standard dense neural network (no convolutional-layers or what so ever)
+[the free e-book of Aaron Courville](http://neuralnetworksanddeeplearning.com). It implements a standard dense neural network (no convolutional-layers)
 
-In the example-folder you can see how the network can be trainied with a dataset (in this case the famous mnist-dataset)
+In the example-folder you can see how the network can be trained with a dataset (in this case the famous mnist-dataset)
 
-In order to train the network you have to provide samples of data wich has to be stored in the following format:
+In order to train the network you have to provide samples of data. which has to be stored in the following format:
 
 Say you are using n-input paramters, then your trainig-data set has to be an array of tuples containig:
 1. The trainig input (one-sample) in an array of the shape (n,)
