@@ -12,7 +12,4 @@ class CategorialCorssEntropy(CostFunction):
     
     @staticmethod
     def delta(z, a, y, activation=None):
-        if activation.__name__ == "SoftMax":
-            return (a-y)
-        else:
-            return (-y / a) * activation.derivative(z)
+        return (a-y)

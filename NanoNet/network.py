@@ -38,14 +38,14 @@ class Network:
         if l1 and l2:
             raise RegularizationError("Only one regularization-method can be used at the same time!")
 
-        if cost_function.__name__ == "LogLikelihood" and a_functions[-1].__name__ != "SoftMax":
-            raise NetworkConfigError("The LogLikelihood cost-function can only be used in combination with a sofMax-ouput layer!")
+        if cost_function.__name__ in ["CategorialCrossEntropy", "LogLikelihood"] and a_functions[-1].__name__ != "SoftMax":
+            raise NetworkConfigError("The LogLikelihood, CategorialCrossEntropy cost-function can only be used in combination with a sofMax-ouput layer!")
 
         if cost_function.__name__ == "CrossEntropy" and a_functions[-1].__name__ != "Sigmoid":
             raise NetworkConfigError("The CrossEntropy cost-function can only be used in combination with a sigmoid-ouput layer!")
         
         if a_functions[-1].__name__ == "SoftMax" and cost_function.__name__ not in ["CategorialCrossEntropy", "LogLikelihood"]:
-            raise NetworkConfigError("The SoftMax activation-function can only be used in combination with the Loglikelihood-cost-function!")
+            raise NetworkConfigError("The SoftMax activation-function can only be used in combination with the Loglikelihood or CategorialCrossEntropy-cost-function!")
         
         for i in range(self.num_layers-1):
             if a_functions[i].__name__ == "SoftMax" and i != self.num_layers - 2:
@@ -111,7 +111,10 @@ class Network:
             else:
                 start_time = time.time()
 
-                print(f"Epoch {0}: {self.evaluate(self.test_data)} / {self.n_test} ")
+                if self.test_data:
+                    print(f"Epoch {0}: {self.evaluate(self.test_data)} / {self.n_test} ")
+                else:
+                    print(f"Epoch {0}: {self.evaluate(self.training_data)} / {self.n_trainig} ")
 
                 test_cost, test_accuracy = [], []
                 training_cost, training_accuracy = [], []
@@ -127,6 +130,7 @@ class Network:
                         cost = self.total_cost(self.training_data, convert=False)
                         training_cost.append(cost)
                         print(f"Epoch {j+1}: Cost on training data: {cost}")
+
                     if monitor_training_accuracy:
                         accuracy = self.evaluate(self.training_data, convert=False)
                         percent = round((accuracy/self.n_trainig)*100, 3)
@@ -152,7 +156,7 @@ class Network:
                             self.best_biases = deepcopy(self.biases)
                             self.best_accuracy = accuracy/self.n_trainig
 
-                        print(f"Epoch {j+1}: {accuracy} / {self.n_test} ({round(percent)}%)")
+                        print(f"Epoch {j+1}: {accuracy} / {self.n_test} ({percent}%)")
                 
                 print("-----------------------------")
                 print(f"finished in {round(time.time() - start_time, 4)} seconds 🥵")       
