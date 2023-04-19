@@ -18,17 +18,17 @@ Say you are using n-input paramters, then your trainig-data set has to be an arr
 If either your trainig-data or test-data isn't provided in the unit-vector format you have to set convert to True!
 
 
-### Activation Functions:
+## Activation Functions:
 The available activation-functions are Sigmoid, ReLu and SoftMax. Note that SoftMax can only be used in the output-layer in combination with either the Loglikelihood or the CategorialCrossEntropy-Cost-Function.
 Using ReLu in the output-layer is almost never a good idea, since it messes with the logarythmic-based cost-functions.
 
 
-### Cost Functions:
+## Cost Functions:
 You choose between the CategorialCrossEntropy, CrossEntropy, LogLikelihood, Qudratic-Cost and MeanAbsoluteCost-Functions.
 Note that certain cost-functions can only be used with certain activations-functions in the output layer.
 
 
-### Optimizer:
+## Optimizer:
 The Optimizer implemented are stantard Stochastic Gradient Descent, SGD-Momentum, ADAM and RMSpromp!
 
 
