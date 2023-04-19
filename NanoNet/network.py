@@ -17,9 +17,9 @@ class Network:
     best_accuracy = 0
 
     def __init__(self, sizes: list , a_functions: list, cost_function: object, optimizer: object = None, 
-                 mini_batch_size : int = None, test_data: list = None, training_data : list = None, 
-                 l1 : bool = False, l2 : bool = False, w_init_size: str ="small", mode_train : bool = True,
-                 classify : bool = True):
+                mini_batch_size : int = None, test_data: list = None, training_data : list = None, 
+                l1 : bool = False, l2 : bool = False, w_init_size: str ="small", mode_train : bool = True,
+                classify : bool = True, accuracy_precission : float = 0.01):
         
         self.num_layers = len(sizes)
         self.sizes = sizes
@@ -36,7 +36,7 @@ class Network:
         self.cost_function.l2 = l2
         
         self.classify = classify
-
+        self.accuracy_precission = accuracy_precission
 
         if l1 and l2:
             raise RegularizationError("Only one regularization-method can be used at the same time!")
@@ -59,6 +59,8 @@ class Network:
                 raise NetworkConfigError("When mode_train is set to True you have to provide an optimizer, a mini-batch-size and a trainig-dataset!")
             self.optimizer = self.initialize_optimizer(optimizer, mini_batch_size, l1, l2)
 
+        if self.classify and self.cost_function.__name__ not in ["QuadraticCost", "MeanAbsoluteCost"]:
+            raise NetworkConfigError("Regresssion-type Neural Networks can only be used in combination with the QuadraticCost-Function!")
 
     def initialize_weights(self, size):
         if size.lower() == "small":
@@ -103,16 +105,19 @@ class Network:
             else:
                 results = [(np.argmax(self.feedforward(x)), np.argmax(y))
                             for (x, y) in data]
+            
+            return sum(int(x == y) for (x, y) in results)
         else:
-           """
-           if convert:
-                results = [(np.argmax(self.feedforward(x)), y)
+            results = [(np.argmax(self.feedforward(x)), y)
                         for (x, y) in data]
-            else:
-                results = [(np.argmax(self.feedforward(x)), np.argmax(y))
-                            for (x, y) in data] """
-        return sum(int(x == y) for (x, y) in results)
-    
+            
+            count = 0
+
+            for (x, y) in results:
+                if np.all(np.absolute(x-y) < self.accuracy_precission):
+                    count += 1
+            return count
+
 
     def train(self, epochs, monitor_training_cost=False, monitor_training_accuracy=False, monitor_test_cost=True, monitor_test_accuracy=True, plot=True, trainig_convert = False, test_convert = True):
 
