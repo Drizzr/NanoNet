@@ -181,6 +181,7 @@ class Network:
 
                 if plot:
 
+                    plt.style.use('seaborn')
                     plt.figure(figsize=(9, 3))
 
                     plt.subplot(131)
@@ -190,6 +191,7 @@ class Network:
                     plt.plot(test_cost)
                     plt.plot(training_cost)
                     plt.show()
+                    plt.tight_layout(pad=3)
 
         else:
             raise NetworkConfigError("In order to train the network mode_train has to be set to True")
