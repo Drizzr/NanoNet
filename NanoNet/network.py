@@ -59,8 +59,9 @@ class Network:
                 raise NetworkConfigError("When mode_train is set to True you have to provide an optimizer, a mini-batch-size and a trainig-dataset!")
             self.optimizer = self.initialize_optimizer(optimizer, mini_batch_size, l1, l2)
 
-        if self.classify and self.cost_function.__name__ not in ["QuadraticCost", "MeanAbsoluteCost"]:
+        if not self.classify and self.cost_function.__name__ not in ["QuadraticCost", "MeanAbsoluteCost"]:
             raise NetworkConfigError("Regresssion-type Neural Networks can only be used in combination with the QuadraticCost-Function!")
+        
 
     def initialize_weights(self, size):
         if size.lower() == "small":
@@ -119,7 +120,7 @@ class Network:
             return count
 
 
-    def train(self, epochs, monitor_training_cost=False, monitor_training_accuracy=False, monitor_test_cost=True, monitor_test_accuracy=True, plot=True, trainig_convert = False, test_convert = True):
+    def train(self, epochs, monitor_training_cost=False, monitor_training_accuracy=False, monitor_test_cost=True, monitor_test_accuracy=True, plot = False, trainig_convert = False, test_convert = False):
 
         if self.mode_train:
             if not self.optimizer or not self.training_data or not self.optimizer.MINI_BATCH_SIZE:
@@ -144,7 +145,7 @@ class Network:
 
                     print(f"Epoch {j+1} complete:")
                     if monitor_training_cost:
-                        cost = self.total_cost(self.training_data, convert=False)
+                        cost = self.total_cost(self.training_data, convert=trainig_convert)
                         training_cost.append(cost)
                         print(f"Epoch {j+1}: Cost on training data: {cost}")
 
@@ -180,16 +181,26 @@ class Network:
                 print("-----------------------------")
 
                 if plot:
-
                     plt.style.use('seaborn')
-                    plt.figure(figsize=(9, 3))
+                    fig = plt.figure(figsize=(15, 8), dpi=80)
+                    plt.subplot(1,2,1)
+                    if monitor_test_accuracy:
+                        plt.plot(test_accuracy, label="test data")
+                    if monitor_training_accuracy:
+                        plt.plot(training_accuracy, label="training data")
+                    plt.xlabel("epochs")
+                    plt.ylabel("accuracy in %")
+                    plt.subplot(122)
+                    if monitor_test_cost:
+                        plt.plot(test_cost, label="test data")
+                    if monitor_training_cost:
+                        plt.plot(training_cost, label="training data")
+                    plt.xlabel("epochs")
+                    plt.ylabel("cost function output")
 
-                    plt.subplot(131)
-                    plt.plot(test_accuracy)
-                    plt.plot(training_accuracy)
-                    plt.subplot(132)
-                    plt.plot(test_cost)
-                    plt.plot(training_cost)
+                    handles, labels = plt.subplot(1, 2, 2).get_legend_handles_labels()
+                    fig.legend(handles, labels,ncols=4, fancybox=True, shadow=True, loc="lower center")
+
                     plt.show()
                     plt.tight_layout(pad=3)
 
