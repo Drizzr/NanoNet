@@ -5,9 +5,11 @@ class SGD_Momentum(Optimizer):
     vel_w = None
     vel_b = None
 
-    def __init__(self, eta, beta=0.9):
+    def __init__(self, eta, lambd=1, beta=0.9):
         self.beta = beta
         self.eta = eta
+        self.lambd = lambd
+
         
     
     def update_mini_batch(self, mini_batch, controll):

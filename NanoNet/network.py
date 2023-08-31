@@ -1,7 +1,6 @@
 import numpy as np
 import time 
 import json
-import sys
 import time
 from werkzeug.utils import import_string
 from copy import deepcopy
@@ -32,8 +31,8 @@ class Network:
         self.a_functions = self.initialize_activations(a_functions)
         self.cost_function = cost_function
         self.mode_train = mode_train
-        self.cost_function.l1 = l1
-        self.cost_function.l2 = l2
+        self.l1 = l1
+        self.l2 = l2
         
         self.classify = classify
         self.accuracy_precission = accuracy_precission
@@ -83,6 +82,8 @@ class Network:
         optimizer.NUM_LAYERS = self.num_layers
         optimizer.n = len(self.training_data)
         optimizer.MINI_BATCH_SIZE = mini_batch_size
+        optimizer.L1 = l1
+        optimizer.L2 = l2
         return optimizer
 
 
@@ -222,10 +223,10 @@ class Network:
                 y = vectorized_result(y, 10)
             cost += self.cost_function.forward(a, y)/ len(data)
         
-        """if self.cost_function.l2:
-            cost += (self.cost_function.l2_regularisation_forward(self.weights)*self.optimizer.lamb/2)/ len(data)
-        elif self.cost_function.l1:
-            cost += (self.cost_function.l1_regularisation_forward(self.weights)*self.optimizer.lamb)/ len(data)"""
+        if self.l2:
+            cost += self.cost_function.l2_regularization(self.optimizer.lambd, self.weights)/self.optimizer.MINI_BATCH_SIZE
+        elif self.l1:
+            cost += self.cost_function.l1_regularization(self.optimizer.lambd, self.weights)/self.optimizer.MINI_BATCH_SIZE
         
         return round(cost,4)
     

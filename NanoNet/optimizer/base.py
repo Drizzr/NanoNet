@@ -8,9 +8,11 @@ class Optimizer:
     COST_FUNCTION = None
     NUM_LAYERS = None
     MINI_BATCH_SIZE = None
+    L1 = False
+    L2 = False
 
     n = None
-
+    lambd = 1
 
     def backprop(self, x, y):
         nabla_b = [np.zeros(b.shape) for b in self.BIASES]
@@ -45,6 +47,13 @@ class Optimizer:
             nabla_b[-l] = delta.mean(0)
             #print((self.biases[-l]-nabla_b[-l]).shape)
             nabla_w[-l] = np.dot(delta.T, activations[-l-1]).T / self.MINI_BATCH_SIZE
+
+        if self.L2:
+            for i in range(len(nabla_w)):
+                nabla_w[i] += self.lambd/self.MINI_BATCH_SIZE * self.WEIGHTS[i]
+        elif self.L1:
+            for i in range(len(nabla_w)):
+                nabla_w[i] += self.lambd/self.MINI_BATCH_SIZE * np.sign(self.WEIGHTS[i])
         return (nabla_b, nabla_w)
     
 

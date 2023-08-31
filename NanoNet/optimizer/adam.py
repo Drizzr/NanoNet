@@ -5,7 +5,8 @@ import numpy as np
 
 class ADAM(SGD_Momentum, RMSPromp):
 
-    def __init__(self, eta, beta1=0.9, beta2=0.99):
+    def __init__(self, eta, lambd=1, beta1=0.9, beta2=0.99):
+        self.lambd = lambd
         self.eta = eta
         self.beta1 = beta1
         self.beta2 = beta2

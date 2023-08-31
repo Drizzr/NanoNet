@@ -7,7 +7,7 @@ from mnis_loadaer import load_data_wrapper
 training_data, validation_data, test_data = load_data_wrapper()
 
 net = Network([784, 100, 10], [ReLu(), Sigmoid()], QuadraticCost(), SGD_Momentum(0.5), 10, 
-              test_data=test_data, training_data=training_data, w_init_size="small")
+              test_data=test_data, training_data=training_data, w_init_size="small", l2=False)
 
 net.train(10, plot=True, monitor_training_cost=False, monitor_training_accuracy=True, monitor_test_cost=True, monitor_test_accuracy=True, test_convert=True)
 

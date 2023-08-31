@@ -7,9 +7,10 @@ class RMSPromp(Optimizer):
     estimated_crude_variance_b = None
     EPSILON = 10e-7
 
-    def __init__(self, eta, beta=0.99):
+    def __init__(self, eta, lambd=1, beta=0.99):
         self.eta = eta
         self.beta = beta
+        self.lambd = lambd
     
 
     def update_mini_batch(self, mini_batch, controll):
