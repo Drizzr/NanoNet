@@ -8,6 +8,7 @@ class Optimizer:
     COST_FUNCTION = None
     NUM_LAYERS = None
     MINI_BATCH_SIZE = None
+    CLASSIFY = None
     L1 = False
     L2 = False
 
@@ -65,7 +66,11 @@ class Optimizer:
             batch, controll_batch = [], []
             for tupel in trainig_data[k:k+self.MINI_BATCH_SIZE]:
                 batch.append(tupel[0])
-                controll_batch.append(tupel[1])
+                if self.CLASSIFY:
+                    controll_batch.append(tupel[1])
+                else:
+                    controll_batch.append([tupel[1]])
+                    #print(training_data[k:k+mini_batch_size][1])
                 #print(training_data[k:k+mini_batch_size][1])
             mini_batches.append(np.array(batch))
             controll.append(np.array(controll_batch))

@@ -82,10 +82,9 @@ class Network:
         optimizer.ACTIVATION_FUNCTIONS = self.a_functions
         optimizer.COST_FUNCTION = self.cost_function
         optimizer.NUM_LAYERS = self.num_layers
-        optimizer.n = len(self.training_data)
+        optimizer.CLASSIFY = self.classify
         optimizer.MINI_BATCH_SIZE = mini_batch_size
-        optimizer.L1 = l1
-        optimizer.L2 = l2
+        optimizer.n = len(self.training_data)
         return optimizer
 
 
