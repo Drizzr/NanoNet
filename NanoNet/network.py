@@ -6,6 +6,7 @@ from werkzeug.utils import import_string
 from copy import deepcopy
 from NanoNet.Exceptions import LayerConfigError, NetworkConfigError, HyperparamterError, RegularizationError
 import matplotlib.pyplot as plt
+import matplotlib as mpl    
 
 
 
@@ -182,7 +183,10 @@ class Network:
                 print("-----------------------------")
 
                 if plot:
-                    plt.style.use('seaborn')
+                    mpl.rcParams.update(mpl.rcParamsDefault)
+                    mpl.rcParams['text.usetex'] = True
+                    mpl.rcParams["text.latex.preamble"] = r'\usepackage{siunitx}'
+                    mpl.style.use("science")
                     fig = plt.figure(figsize=(15, 8), dpi=80)
                     plt.subplot(1,2,1)
                     if monitor_test_accuracy:
