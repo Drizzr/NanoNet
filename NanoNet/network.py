@@ -6,7 +6,8 @@ from werkzeug.utils import import_string
 from copy import deepcopy
 from NanoNet.Exceptions import LayerConfigError, NetworkConfigError, HyperparamterError, RegularizationError
 import matplotlib.pyplot as plt
-import matplotlib as mpl    
+import matplotlib as mpl  
+import scienceplots  
 
 
 
@@ -194,7 +195,7 @@ class Network:
                     if monitor_training_accuracy:
                         plt.plot(training_accuracy, label="training data")
                     plt.xlabel("epochs")
-                    plt.ylabel("accuracy in %")
+                    plt.ylabel("accuracy in $%$")
                     plt.subplot(122)
                     if monitor_test_cost:
                         plt.plot(test_cost, label="test data")
