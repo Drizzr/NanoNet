@@ -28,8 +28,6 @@ class Network:
         self.weights = self.initialize_weights(w_init_size)
         self.test_data = test_data
         self.training_data = training_data
-        self.n_test = len(test_data)
-        self.n_trainig = len(training_data)
         self.a_functions = self.initialize_activations(a_functions)
         self.cost_function = cost_function
         self.mode_train = mode_train
@@ -58,6 +56,11 @@ class Network:
         if mode_train:
             if not optimizer or not mini_batch_size or not training_data:
                 raise NetworkConfigError("When mode_train is set to True you have to provide an optimizer, a mini-batch-size and a trainig-dataset!")
+            try:
+                self.n_test = len(test_data)
+            except:
+                pass
+            self.n_trainig = len(training_data)
             self.optimizer = self.initialize_optimizer(optimizer, mini_batch_size, l1, l2)
 
         if not self.classify and self.cost_function.__name__ not in ["QuadraticCost", "MeanAbsoluteCost"]:
@@ -88,12 +91,14 @@ class Network:
         return optimizer
 
 
-    def feedforward(self, a):
+    def feedforward(self, a, batch=False):
         joined = list(zip(self.biases, self.weights))
         
-        for i in range(0, self.num_layers-1):
-            a = self.a_functions[i].forward(np.dot(joined[i][1].T, a).T+joined[i][0])
 
+        for i in range(0, self.num_layers-1):
+            a = self.a_functions[i].forward(np.dot(a, joined[i][1]) + joined[i][0])
+
+            
         return a
     
     def evaluate(self, data, convert=True):
@@ -254,7 +259,7 @@ class Network:
         print(f"Saved parameters to {filename}!")
 
 
-def load_from_file(filename, trainig_data, test_data):
+def load_from_file(filename, mode_train=False, trainig_data=None, test_data=None):
     """
     Load a neural network from the file ``filename``.  Returns an
     instance of Network.
@@ -265,7 +270,7 @@ def load_from_file(filename, trainig_data, test_data):
         activation_functions = data["activation_functions"]
         activation_functions = [import_string(f"NanoNet.activationFunction.{function}") for function in activation_functions]
         cost_function = import_string(f"NanoNet.costFunction.{cost_function}")
-    net = Network(data["sizes"], activation_functions, cost_function, training_data=trainig_data, test_data=test_data, mode_train=False)
+    net = Network(data["sizes"], activation_functions, cost_function, training_data=trainig_data, test_data=test_data, mode_train=mode_train)
     net.weights = [np.array(w) for w in data["weights"]]
     net.biases = [np.array(b) for b in data["biases"]]
 

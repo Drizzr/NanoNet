@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 class Optimizer:
     
@@ -80,7 +81,7 @@ class Optimizer:
 
     def minimize(self, trainig_data):
 
-        #random.shuffle(trainig_data)
+        random.shuffle(trainig_data)
                 
         data = self.create_minibatch(trainig_data)
         for mini_batch, controll in data:
