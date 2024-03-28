@@ -1,91 +1,72 @@
 import numpy as np
 import random
+from NanoNet.Exceptions import RegularizationError, NetworkConfigError
 
 class Optimizer:
     
-    WEIGHTS = None
-    BIASES  = None
-    ACTIVATION_FUNCTIONS = None
-    COST_FUNCTION = None
-    NUM_LAYERS = None
-    MINI_BATCH_SIZE = None
-    CLASSIFY = None
-    L1 = False
-    L2 = False
+    def __init__(self, network : object, cost_function : object) -> None:
+        
+        self.NETWORK = network
+        self.COST_FUNCTION = cost_function
 
-    n = None
-    lambd = 1
+        
+        if cost_function.__name__ in ["CategorialCrossEntropy", "LogLikelihood"] and self.NETWORK.a_functions[-1].__name__ != "SoftMax":
+            raise NetworkConfigError("The LogLikelihood, CategorialCrossEntropy cost-function can only be used in combination with a sofMax-ouput layer!")
+
+        if cost_function.__name__ == "CrossEntropy" and self.NETWORK.a_functions[-1].__name__ != "Sigmoid":
+            raise NetworkConfigError("The CrossEntropy cost-function can only be used in combination with a sigmoid-ouput layer!")
+        
+        if self.NETWORK.a_functions[-1].__name__ == "SoftMax" and cost_function.__name__ not in ["CategorialCrossEntropy", "LogLikelihood"]:
+            raise NetworkConfigError("The SoftMax activation-function can only be used in combination with the Loglikelihood or CategorialCrossEntropy-cost-function!")
+        
 
     def backprop(self, x, y):
-        nabla_b = [np.zeros(b.shape) for b in self.BIASES]
-        nabla_w = [np.zeros(w.shape) for w in self.WEIGHTS]
+
+        mini_batch_size = x.shape[0]
+        
+        nabla_b = [np.zeros(b.shape) for b in self.NETWORK.biases]
+        nabla_w = [np.zeros(w.shape) for w in self.NETWORK.weights]
         # feedforward
         activation = x
         activations = [x] 
         zs = [] 
 
-        joined = list(zip(self.BIASES,self.WEIGHTS))
-        for i in range(0, self.NUM_LAYERS-1):
+        joined = list(zip(self.NETWORK.biases,self.NETWORK.weights))
+        for i in range(0, self.NETWORK.num_layers-1):
             z = np.dot(activations[-1], joined[i][1]) + joined[i][0]
-            
-
             zs.append(z)
-            activation = self.ACTIVATION_FUNCTIONS[i].forward(z)
+
+            activation = self.NETWORK.a_functions[i].forward(z)
             activations.append(activation)
 
-        delta = self.COST_FUNCTION.delta(zs[-1], activations[-1], y, self.ACTIVATION_FUNCTIONS[-1])
+        
+        delta = self.COST_FUNCTION.delta(zs[-1], activations[-1], y, self.NETWORK.a_functions[-1])
+
 
         nabla_b[-1] = delta.mean(0)
-        nabla_w[-1] = np.dot(delta.T, activations[-2]).T / self.MINI_BATCH_SIZE
-        for l in range(2, self.NUM_LAYERS):
-            #print(1)
+        nabla_w[-1] = np.dot(delta.T, activations[-2]).T / mini_batch_size
+
+        for l in range(2, self.NETWORK.num_layers):
             z = zs[-l]
-            sp = self.ACTIVATION_FUNCTIONS[-l].derivative(z)
-            delta = np.dot(self.WEIGHTS[-l+1], delta.T).T * sp
-            if np.isnan(sp).all():
-                print(sp)
-                #print(z)
-                raise KeyboardInterrupt
+            sp = self.NETWORK.a_functions[-l].derivative(z)
+            delta = np.dot(self.NETWORK.weights[-l+1], delta.T).T * sp
+
             nabla_b[-l] = delta.mean(0)
             #print((self.biases[-l]-nabla_b[-l]).shape)
-            nabla_w[-l] = np.dot(delta.T, activations[-l-1]).T / self.MINI_BATCH_SIZE
+            nabla_w[-l] = np.dot(delta.T, activations[-l-1]).T / mini_batch_size
 
-        if self.L2:
+        if self.COST_FUNCTION.l2:
             for i in range(len(nabla_w)):
-                nabla_w[i] += self.lambd/self.MINI_BATCH_SIZE * self.WEIGHTS[i]
-        elif self.L1:
+                nabla_w[i] += self.lambd/mini_batch_size * self.NETWORK.weights[i]
+        elif self.COST_FUNCTION.l1:
             for i in range(len(nabla_w)):
-                nabla_w[i] += self.lambd/self.MINI_BATCH_SIZE * np.sign(self.WEIGHTS[i])
+                nabla_w[i] += self.lambd/mini_batch_size * np.sign(self.NETWORK.weights[i])
+
         return (nabla_b, nabla_w)
-    
 
-    def create_minibatch(self, trainig_data):
-        controll = []
-        mini_batches = []
 
-        for k in range(0, self.n, self.MINI_BATCH_SIZE):
-            batch, controll_batch = [], []
-            for tupel in trainig_data[k:k+self.MINI_BATCH_SIZE]:
-                batch.append(tupel[0])
-                if self.CLASSIFY:
-                    controll_batch.append(tupel[1])
-                else:
-                    controll_batch.append([tupel[1]])
-                    #print(training_data[k:k+mini_batch_size][1])
-                #print(training_data[k:k+mini_batch_size][1])
-            mini_batches.append(np.array(batch))
-            controll.append(np.array(controll_batch))
-        
-        return zip(mini_batches, controll)
-    
-
-    def minimize(self, trainig_data):
-
-        random.shuffle(trainig_data)
-                
-        data = self.create_minibatch(trainig_data)
-        for mini_batch, controll in data:
-            self.update_mini_batch(mini_batch, controll)
+    def step(self, x, y):
+        self.update_mini_batch(x, y)
 
         
     

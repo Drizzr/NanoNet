@@ -3,19 +3,20 @@ import numpy as np
 
 class SGD(Optimizer):
 
-    def __init__(self, learnig_rate, lambd=1):
+    def __init__(self, network : object, cost_function : object, learnig_rate):
+        
+        super().__init__(network, cost_function)
         self.eta = learnig_rate
-        self.lambd = lambd
     
     def update_mini_batch(self, mini_batch, controll):
 
         delta_nabla_b, delta_nabla_w = self.backprop(mini_batch, controll)
 
-        self.WEIGHTS = [w-self.eta*nw
-                            for w, nw in zip(self.WEIGHTS, delta_nabla_w)]
+        self.NETWORK.weights = [w-self.eta*nw
+                            for w, nw in zip(self.NETWORK.weights, delta_nabla_w)]
 
         
-        self.BIASES  = [b-self.eta*nb
-                        for b, nb in zip(self.BIASES, delta_nabla_b)]
+        self.NETWORK.biases  = [b-self.eta*nb
+                        for b, nb in zip(self.NETWORK.biases, delta_nabla_b)]
         
 

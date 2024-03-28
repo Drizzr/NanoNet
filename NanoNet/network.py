@@ -3,12 +3,7 @@ import time
 import json
 import time
 from werkzeug.utils import import_string
-from copy import deepcopy
-from NanoNet.Exceptions import LayerConfigError, NetworkConfigError, HyperparamterError, RegularizationError
-import matplotlib.pyplot as plt
-import matplotlib as mpl  
-import scienceplots  
-
+from NanoNet.Exceptions import LayerConfigError, NetworkConfigError
 
 
 class Network:
@@ -17,61 +12,28 @@ class Network:
     best_biases = None
     best_accuracy = 0
 
-    def __init__(self, sizes: list , a_functions: list, cost_function: object, optimizer: object = None, 
-                mini_batch_size : int = None, test_data: list = None, training_data : list = None, 
-                l1 : bool = False, l2 : bool = False, w_init_size: str ="small", mode_train : bool = True,
-                classify : bool = True, accuracy_precission : float = 0.01):
+    def __init__(self, sizes: list , a_functions: list,
+                w_init_size: str ="small"):
         
         self.num_layers = len(sizes)
         self.sizes = sizes
-        self.biases = [np.random.randn(y) for y in sizes[1:]]
-        self.weights = self.initialize_weights(w_init_size)
-        self.test_data = test_data
-        self.training_data = training_data
+        self.weights, self.biases = self.initialize_params(w_init_size)
         self.a_functions = self.initialize_activations(a_functions)
-        self.cost_function = cost_function
-        self.mode_train = mode_train
-        self.l1 = l1
-        self.l2 = l2
-        
-        self.classify = classify
-        self.accuracy_precission = accuracy_precission
 
-        if l1 and l2:
-            raise RegularizationError("Only one regularization-method can be used at the same time!")
-
-        if cost_function.__name__ in ["CategorialCrossEntropy", "LogLikelihood"] and a_functions[-1].__name__ != "SoftMax":
-            raise NetworkConfigError("The LogLikelihood, CategorialCrossEntropy cost-function can only be used in combination with a sofMax-ouput layer!")
-
-        if cost_function.__name__ == "CrossEntropy" and a_functions[-1].__name__ != "Sigmoid":
-            raise NetworkConfigError("The CrossEntropy cost-function can only be used in combination with a sigmoid-ouput layer!")
-        
-        if a_functions[-1].__name__ == "SoftMax" and cost_function.__name__ not in ["CategorialCrossEntropy", "LogLikelihood"]:
-            raise NetworkConfigError("The SoftMax activation-function can only be used in combination with the Loglikelihood or CategorialCrossEntropy-cost-function!")
-        
         for i in range(self.num_layers-1):
             if a_functions[i].__name__ == "SoftMax" and i != self.num_layers - 2:
                 raise NetworkConfigError("The SoftMax activation-function can only be used in the output-layer!")
 
-        if mode_train:
-            if not optimizer or not mini_batch_size or not training_data:
-                raise NetworkConfigError("When mode_train is set to True you have to provide an optimizer, a mini-batch-size and a trainig-dataset!")
-            try:
-                self.n_test = len(test_data)
-            except:
-                pass
-            self.n_trainig = len(training_data)
-            self.optimizer = self.initialize_optimizer(optimizer, mini_batch_size, l1, l2)
 
-        if not self.classify and self.cost_function.__name__ not in ["QuadraticCost", "MeanAbsoluteCost"]:
-            raise NetworkConfigError("Regresssion-type Neural Networks can only be used in combination with the QuadraticCost-Function!")
-        
-
-    def initialize_weights(self, size):
+    def initialize_params(self, size):
         if size.lower() == "small":
-            return [np.random.randn(x, y)/np.sqrt(y) for x, y in zip(self.sizes[:-1], self.sizes[1:])]
+            weights = [np.random.randn(x, y)/np.sqrt(y) for x, y in zip(self.sizes[:-1], self.sizes[1:])]
         elif size.lower() == "large":
-            return [np.random.randn(x, y) for x, y in zip(self.sizes[:-1], self.sizes[1:])]
+            weights = [np.random.randn(x, y) for x, y in zip(self.sizes[:-1], self.sizes[1:])]
+        
+        biases = [np.random.randn(y) for y in self.sizes[1:]]
+        
+        return weights, biases
 
     def initialize_activations(self, a):
         if len(a) == self.num_layers - 1:
@@ -79,167 +41,60 @@ class Network:
         raise LayerConfigError("Structure in size attribute and provided activation-functions do not match. (First layer needs no activation-function) \
                             Note that if the network has n-layers you have to define n-1 activation Functions")
     
-    def initialize_optimizer(self, optimizer, mini_batch_size, l1, l2):
-        optimizer.WEIGHTS = self.weights
-        optimizer.BIASES = self.biases
-        optimizer.ACTIVATION_FUNCTIONS = self.a_functions
-        optimizer.COST_FUNCTION = self.cost_function
-        optimizer.NUM_LAYERS = self.num_layers
-        optimizer.CLASSIFY = self.classify
-        optimizer.MINI_BATCH_SIZE = mini_batch_size
-        optimizer.n = len(self.training_data)
-        return optimizer
-
-
-    def feedforward(self, a, batch=False):
+    def feedforward(self, a):
         joined = list(zip(self.biases, self.weights))
         
-
         for i in range(0, self.num_layers-1):
             a = self.a_functions[i].forward(np.dot(a, joined[i][1]) + joined[i][0])
 
-            
         return a
     
-    def evaluate(self, data, convert=True):
-        """Return the number of test inputs for which the neural
-        network outputs the correct result. Note that the neural
-        network's output is assumed to be the index of whichever
-        neuron in the final layer has the highest activation."""
-        if self.classify:
-            if convert:
-                results = [(np.argmax(self.feedforward(x)), y)
-                        for (x, y) in data]
-            else:
-                results = [(np.argmax(self.feedforward(x)), np.argmax(y))
-                            for (x, y) in data]
-            
-            return sum(int(x == y) for (x, y) in results)
+    def train(self, epochs : int, training_dataset: object,
+            optimizer:object,  step_callback = None, epoch_callback = None):
+
+        if not optimizer.NETWORK:
+            optimizer.NETWORK = self
+
+        start_time = time.time()
+
+        print("-----------------------------")
+        print(f"Training started 🚀")
+        print("model summary:")
+        print(f"Layers: {self.num_layers}")
+        print(f"Sizes: {self.sizes}")
+        print(f"trainable parameters: {sum([w.size for w in self.weights]) + sum([b.size for b in self.biases])}")
+        print(f"Activation Functions: {[function.__name__ for function in self.a_functions]}")
+        print(f"Optimizer: {optimizer.__class__.__name__}")
+        print(f"Cost Function: {optimizer.COST_FUNCTION.__name__}")
+        print(f"Learning Rate: {optimizer.eta}")
+        
+        if optimizer.COST_FUNCTION.l2:
+            print(f"Regularization: l2, lambda: {optimizer.lambd}")
+        elif optimizer.COST_FUNCTION.l1:
+            print(f"Regularization: l1, lambda: {optimizer.lambd}")
         else:
-            results = [(np.argmax(self.feedforward(x)), y)
-                        for (x, y) in data]
-            
-            count = 0
+            print("Regularization: None")
+        print(f"Epochs: {epochs}")
+        print("-----------------------------")
+        print("default loss: ")
+        for j in range(epochs):
 
-            for (x, y) in results:
-                if np.all(np.absolute(x-y) < self.accuracy_precission):
-                    count += 1
-            return count
+            if epoch_callback:
+                epoch_callback(epoch=j)
 
+            for index, (x, y) in enumerate(training_dataset):
 
-    def train(self, epochs, monitor_training_cost=False, monitor_training_accuracy=False, monitor_test_cost=True, monitor_test_accuracy=True, plot = False, trainig_convert = False, test_convert = False):
+                optimizer.step(x, y)
 
-        if self.mode_train:
-            if not self.optimizer or not self.training_data or not self.optimizer.MINI_BATCH_SIZE:
-                raise NetworkConfigError("When mode_train is set to True you have to provide an optimizer, a mini-batch-size and a trainig-dataset! \
-                                        If you are trying to train a network that was preloaded. Set mode_train to True and run the intialize_optimizer function!")
-            else:
-                start_time = time.time()
-
-                if self.test_data:
-                    print(f"Epoch {0}: {self.evaluate(self.test_data, convert=test_convert)} / {self.n_test} ")
-                else:
-                    print(f"Epoch {0}: {self.evaluate(self.training_data, convert=trainig_convert)} / {self.n_trainig} ")
-
-                test_cost, test_accuracy = [], []
-                training_cost, training_accuracy = [], []
-
-                for j in range(epochs):
-                    self.optimizer.minimize(self.training_data)
-
-                    self.weights, self.biases = self.optimizer.WEIGHTS, self.optimizer.BIASES
-
-
-                    print(f"Epoch {j+1} complete:")
-                    if monitor_training_cost:
-                        cost = self.total_cost(self.training_data, convert=trainig_convert)
-                        training_cost.append(cost)
-                        print(f"Epoch {j+1}: Cost on training data: {cost}")
-
-                    if monitor_training_accuracy:
-                        accuracy = self.evaluate(self.training_data, convert=trainig_convert)
-                        percent = round((accuracy/self.n_trainig)*100, 3)
-                        training_accuracy.append(percent)
-
-                        if not monitor_test_accuracy and accuracy/self.n_trainig < self.best_accuracy:
-                            self.best_weights = deepcopy(self.weights)
-                            self.best_biases = deepcopy(self.biases)
-                            self.best_accuracy = accuracy/self.n_trainig
-
-                        print(f"Epoch {j+1}: {accuracy} / {self.n_trainig} ({percent}%)")
-                    if monitor_test_cost and self.test_data:
-                        cost = self.total_cost(self.test_data, convert=test_convert)
-                        test_cost.append(cost)
-                        print(f"Epoch {j+1}: Cost on test data: {cost}")
-                    if monitor_test_accuracy and self.test_data:
-                        accuracy = self.evaluate(self.test_data, convert=test_convert)
-                        percent = round((accuracy/self.n_test)*100, 3)
-                        test_accuracy.append(percent)
-
-                        if accuracy/self.n_trainig < self.best_accuracy:
-                            self.best_weights = deepcopy(self.weights)
-                            self.best_biases = deepcopy(self.biases)
-                            self.best_accuracy = accuracy/self.n_trainig
-
-                        print(f"Epoch {j+1}: {accuracy} / {self.n_test} ({percent}%)")
+                if step_callback:
+                    step_callback(index=index, epoch=j)
                 
-                print("-----------------------------")
-                print(f"finished in {round(time.time() - start_time, 4)} seconds 🥵")       
-                print("-----------------------------")
+            print(f"Epoch {j+1} complete:")
 
-                if plot:
-                    mpl.rcParams.update(mpl.rcParamsDefault)
-                    mpl.rcParams['text.usetex'] = True
-                    mpl.rcParams["text.latex.preamble"] = r'\usepackage{siunitx}'
-                    mpl.style.use("science")
-                    fig = plt.figure(figsize=(15, 8), dpi=80)
-                    plt.subplot(1,2,1)
-                    if monitor_test_accuracy:
-                        plt.plot(test_accuracy, label="test data")
-                    if monitor_training_accuracy:
-                        plt.plot(training_accuracy, label="training data")
-                    plt.xlabel("epochs")
-                    plt.ylabel("accuracy in $%$")
-                    plt.subplot(122)
-                    if monitor_test_cost:
-                        plt.plot(test_cost, label="test data")
-                    if monitor_training_cost:
-                        plt.plot(training_cost, label="training data")
-                    plt.xlabel("epochs")
-                    plt.ylabel("cost function output")
+        print("-----------------------------")
+        print(f"finished in {round(time.time() - start_time, 4)} seconds 🥵")       
+        print("-----------------------------")
 
-                    handles, labels = plt.subplot(1, 2, 2).get_legend_handles_labels()
-                    fig.legend(handles, labels,ncols=4, fancybox=True, shadow=True, loc="lower center")
-
-                    plt.show()
-                    plt.tight_layout(pad=3)
-
-        else:
-            raise NetworkConfigError("In order to train the network mode_train has to be set to True")
-
-
-    def total_cost(self, data, convert=True):
-        """Return the total cost for the data set ``data``.  The flag
-        ``convert`` should be set to False if the data set is the
-        training data (the usual case), and to True if the data set is
-        the validation or test data.  See comments on the similar (but
-        reversed) convention for the ``accuracy`` method, above.
-        """
-        cost = 0.0
-        for x, y in data:
-            a = self.feedforward(x)
-            if convert:
-                y = vectorized_result(y, 10)
-            cost += self.cost_function.forward(a, y)/ len(data)
-        
-        if self.l2:
-            cost += self.cost_function.l2_regularization(self.optimizer.lambd, self.weights)/self.optimizer.MINI_BATCH_SIZE
-        elif self.l1:
-            cost += self.cost_function.l1_regularization(self.optimizer.lambd, self.weights)/self.optimizer.MINI_BATCH_SIZE
-        
-        return round(cost,4)
-    
-    
     def save(self, filename):
         """
         Save the neural network to the file ``filename``.
@@ -250,41 +105,29 @@ class Network:
         data = {"sizes": self.sizes,
                 "weights": [w.tolist() for w in weights],
                 "biases": [b.tolist() for b in biases],
-                "activation_functions": [str(function.__name__) for function in self.a_functions],
-                "cost_function": str(self.optimizer.COST_FUNCTION.__name__)}
+                "activation_functions": [str(function.__name__) for function in self.a_functions]}
         
         with open(filename, "w") as f:
             json.dump(data, f)
 
         print(f"Saved parameters to {filename}!")
+    
 
-
-def load_from_file(filename, mode_train=False, trainig_data=None, test_data=None):
+def load_from_file(filename):
     """
     Load a neural network from the file ``filename``.  Returns an
     instance of Network.
     """
+    
     with open(filename, "r") as f:
         data = json.load(f)
-        cost_function = data["cost_function"]
         activation_functions = data["activation_functions"]
         activation_functions = [import_string(f"NanoNet.activationFunction.{function}") for function in activation_functions]
-        cost_function = import_string(f"NanoNet.costFunction.{cost_function}")
-    net = Network(data["sizes"], activation_functions, cost_function, training_data=trainig_data, test_data=test_data, mode_train=mode_train)
+    
+    net = Network(data["sizes"], activation_functions)
     net.weights = [np.array(w) for w in data["weights"]]
     net.biases = [np.array(b) for b in data["biases"]]
 
     print("Successfully loaded the Network 🚀!")
     return net
         
-
-def vectorized_result(j, length):
-    """
-    Return a 10-dimensional unit vector with a 1.0 in the jth
-    position and zeroes elsewhere.  This is used to convert a digit
-    (0...9) into a corresponding desired output from the neural
-    network.
-    """
-    e = np.zeros(length)
-    e[j] = 1.0
-    return e
