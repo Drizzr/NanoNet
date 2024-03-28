@@ -12,9 +12,9 @@ validation_data = MNIST_DataSet_PKL('mnist_example/data/mnist.pkl.gz', type='val
 
 training_loader = DataLoader(training_data, batch_size=20, shuffle=True, drop_last=True)
 
-"""
+
 net = Network([784, 50, 10], [Sigmoid, Sigmoid], )
-cost_function = QuadraticCost(net, False, False)
+cost_function = QuadraticCost(net, False, True, lambd=0.1)
 
 def epoch_callback(epoch):
     cost = 0.0
@@ -31,11 +31,11 @@ def epoch_callback(epoch):
     
     print(f"Validation accuracy: {sum(int(x == y) for (x, y) in results) / len(training_data) * 100}%")
 
-optimizer = SGD(net, cost_function, learnig_rate=0.1)
+optimizer = ADAM(net, cost_function, 0.03)
 net.train(10, optimizer=optimizer, training_dataset=training_loader, epoch_callback = epoch_callback)
 
-
-net.save("data.json")"""
+"""
+net.save("data.json")
 
 
 net = load_from_file(filename="mnist_example/example_params.json")
@@ -46,4 +46,4 @@ net = load_from_file(filename="mnist_example/example_params.json")
 results = [(np.argmax(net.feedforward(x)), np.argmax(y))
                         for (x, y) in training_data]
 
-print(f"Validation accuracy: {sum(int(x == y) for (x, y) in results) / len(training_data) * 100}%")
+print(f"Validation accuracy: {sum(int(x == y) for (x, y) in results) / len(training_data) * 100}%")"""

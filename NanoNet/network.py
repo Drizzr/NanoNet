@@ -69,9 +69,9 @@ class Network:
         print(f"Learning Rate: {optimizer.eta}")
         
         if optimizer.COST_FUNCTION.l2:
-            print(f"Regularization: l2, lambda: {optimizer.lambd}")
+            print(f"Regularization: l2, lambda: {optimizer.COST_FUNCTION.lambd}")
         elif optimizer.COST_FUNCTION.l1:
-            print(f"Regularization: l1, lambda: {optimizer.lambd}")
+            print(f"Regularization: l1, lambda: {optimizer.COST_FUNCTION.lambd}")
         else:
             print("Regularization: None")
         print(f"Epochs: {epochs}")

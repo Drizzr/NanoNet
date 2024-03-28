@@ -57,10 +57,10 @@ class Optimizer:
 
         if self.COST_FUNCTION.l2:
             for i in range(len(nabla_w)):
-                nabla_w[i] += self.lambd/mini_batch_size * self.NETWORK.weights[i]
+                nabla_w[i] += self.COST_FUNCTION.lambd/mini_batch_size * self.NETWORK.weights[i]
         elif self.COST_FUNCTION.l1:
             for i in range(len(nabla_w)):
-                nabla_w[i] += self.lambd/mini_batch_size * np.sign(self.NETWORK.weights[i])
+                nabla_w[i] += self.COST_FUNCTION.lambd/mini_batch_size * np.sign(self.NETWORK.weights[i])
 
         return (nabla_b, nabla_w)
 
