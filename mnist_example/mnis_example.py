@@ -10,7 +10,7 @@ import numpy as np
 training_data = MNIST_DataSet_PKL('mnist_example/data/mnist.pkl.gz', type='train')
 validation_data = MNIST_DataSet_PKL('mnist_example/data/mnist.pkl.gz', type='validation')
 
-training_loader = DataLoader(training_data, batch_size=10, shuffle=True, drop_last=True)
+training_loader = DataLoader(training_data, batch_size=23, shuffle=True, drop_last=False)
 
 
 net = Network([784, 50, 10], [ReLu(), Sigmoid()])
