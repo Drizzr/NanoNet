@@ -10,11 +10,11 @@ import numpy as np
 training_data = MNIST_DataSet_PKL('mnist_example/data/mnist.pkl.gz', type='train')
 validation_data = MNIST_DataSet_PKL('mnist_example/data/mnist.pkl.gz', type='validation')
 
-training_loader = DataLoader(training_data, batch_size=20, shuffle=True, drop_last=True)
+training_loader = DataLoader(training_data, batch_size=10, shuffle=True, drop_last=True)
 
 
-net = Network([784, 50, 10], [Sigmoid, Sigmoid], )
-cost_function = QuadraticCost(net, False, True, lambd=0.1)
+net = Network([784, 50, 10], [ReLu(), Sigmoid()])
+cost_function = QuadraticCost(net, False, False)
 
 def epoch_callback(epoch):
     cost = 0.0
@@ -31,8 +31,8 @@ def epoch_callback(epoch):
     
     print(f"Validation accuracy: {sum(int(x == y) for (x, y) in results) / len(training_data) * 100}%")
 
-optimizer = ADAM(net, cost_function, 0.03)
-net.train(10, optimizer=optimizer, training_dataset=training_loader, epoch_callback = epoch_callback)
+optimizer = SGD_Momentum(net, cost_function, 0.5)
+net.train(100, optimizer=optimizer, training_dataset=training_loader, epoch_callback = epoch_callback)
 
 """
 net.save("data.json")

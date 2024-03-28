@@ -8,10 +8,6 @@ from NanoNet.Exceptions import LayerConfigError, NetworkConfigError
 
 class Network:
 
-    best_weights = None
-    best_biases = None
-    best_accuracy = 0
-
     def __init__(self, sizes: list , a_functions: list,
                 w_init_size: str ="small"):
         
@@ -55,6 +51,7 @@ class Network:
         if not optimizer.NETWORK:
             optimizer.NETWORK = self
 
+
         start_time = time.time()
 
         print("-----------------------------")
@@ -85,6 +82,7 @@ class Network:
             for index, (x, y) in enumerate(training_dataset):
 
                 optimizer.step(x, y)
+                
 
                 if step_callback:
                     step_callback(index=index, epoch=j)

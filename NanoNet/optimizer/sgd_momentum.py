@@ -4,6 +4,7 @@ from .base import Optimizer
 class SGD_Momentum(Optimizer):
     vel_w = None
     vel_b = None
+    
 
     def __init__(self, network : object, cost_function : object, eta, beta=0.9):
         

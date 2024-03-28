@@ -52,7 +52,7 @@ class Optimizer:
             delta = np.dot(self.NETWORK.weights[-l+1], delta.T).T * sp
 
             nabla_b[-l] = delta.mean(0)
-            #print((self.biases[-l]-nabla_b[-l]).shape)
+            #print((self.NETWORK.biases[-l]-nabla_b[-l]).shape)
             nabla_w[-l] = np.dot(delta.T, activations[-l-1]).T / mini_batch_size
 
         if self.COST_FUNCTION.l2:

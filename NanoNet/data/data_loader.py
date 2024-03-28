@@ -12,29 +12,23 @@ class DataLoader():
         self.sampler = Sampler(self.dataset, self.shuffle)
     
     def __iter__(self):
-        if self.drop_last:
-            sampler_iter = iter(self.sampler)
-            while True:
-                try:
-                    x_batch = [self.dataset[next(sampler_iter)][0] for _ in range(self.batch_size)]
-                    y_batch = [self.dataset[next(sampler_iter)][1] for _ in range(self.batch_size)]
-                    yield np.array(x_batch), np.array(y_batch)
-                except StopIteration:
-                    break
-        else:
-            batch_x = [0] * self.batch_size
-            batch_y = [0] * self.batch_size
-            idx_in_batch = 0
-            for idx in self.sampler:
-                batch_x[idx_in_batch] = self.dataset[idx][0]
-                batch_y[idx_in_batch] = self.dataset[idx][1]
-                idx_in_batch += 1
-                if idx_in_batch == self.batch_size:
-                    yield np.array(batch_x), np.array(batch_y)
-                    idx_in_batch = 0
-                    batch_x = [0] * self.batch_size
-                    batch_y = [0] * self.batch_size
-            if idx_in_batch > 0:
+
+        batch_x = [0] * self.batch_size
+        batch_y = [0] * self.batch_size
+        idx_in_batch = 0
+        for idx in self.sampler:
+            batch_x[idx_in_batch] = self.dataset[idx][0]
+            batch_y[idx_in_batch] = self.dataset[idx][1]
+            idx_in_batch += 1
+            if idx_in_batch == self.batch_size:
+                yield np.array(batch_x), np.array(batch_y)
+                idx_in_batch = 0
+                batch_x = [0] * self.batch_size
+                batch_y = [0] * self.batch_size
+        if idx_in_batch > 0:
+            if self.drop_last:
+                pass
+            else:
                 yield np.array(batch_x[:idx_in_batch]), np.array(batch_y[:idx_in_batch])
     
     def __len__(self) -> int:
