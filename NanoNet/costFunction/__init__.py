@@ -1,4 +1,4 @@
-from .cross_entropy import CrossEntropy
+from .binary_cross_entropy import BinaryCrossEntropy
 from .log_likelihood import LogLikelihood
 from .quadratic_cost import QuadraticCost
 from .categorial_cross_entropy import CategorialCrossEntropy

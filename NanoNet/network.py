@@ -82,7 +82,7 @@ class Network:
             for index, (x, y) in enumerate(training_dataset):
 
                 optimizer.step(x, y)
-                
+
 
                 if step_callback:
                     step_callback(index=index, epoch=j)

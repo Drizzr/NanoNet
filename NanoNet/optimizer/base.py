@@ -14,7 +14,7 @@ class Optimizer:
             raise NetworkConfigError("The LogLikelihood, CategorialCrossEntropy cost-function can only be used in combination with a sofMax-ouput layer!")
 
         if cost_function.__name__ == "CrossEntropy" and self.NETWORK.a_functions[-1].__name__ != "Sigmoid":
-            raise NetworkConfigError("The CrossEntropy cost-function can only be used in combination with a sigmoid-ouput layer!")
+            raise NetworkConfigError("The BinaryCrossEntropy cost-function can only be used in combination with a sigmoid-ouput layer!")
         
         if self.NETWORK.a_functions[-1].__name__ == "SoftMax" and cost_function.__name__ not in ["CategorialCrossEntropy", "LogLikelihood"]:
             raise NetworkConfigError("The SoftMax activation-function can only be used in combination with the Loglikelihood or CategorialCrossEntropy-cost-function!")

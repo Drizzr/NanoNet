@@ -1,6 +1,6 @@
 from NanoNet.network import Network, load_from_file
 from NanoNet.optimizer import SGD, SGD_Momentum, RMSPromp, ADAM
-from NanoNet.costFunction import QuadraticCost, CrossEntropy, LogLikelihood, CategorialCrossEntropy
+from NanoNet.costFunction import QuadraticCost, LogLikelihood, CategorialCrossEntropy, BinaryCrossEntropy, MeanAbsoluteCost
 from NanoNet.activationFunction import Sigmoid, ReLu, SoftMax
 from NanoNet.data.examples import MNIST_DataSet_PKL
 from NanoNet.data import DataLoader
@@ -13,7 +13,7 @@ validation_data = MNIST_DataSet_PKL('mnist_example/data/mnist.pkl.gz', type='val
 training_loader = DataLoader(training_data, batch_size=23, shuffle=True, drop_last=False)
 
 
-net = Network([784, 50, 10], [ReLu(), Sigmoid()])
+net = Network([784, 50, 10], [Sigmoid(), Sigmoid()])
 cost_function = QuadraticCost(net, False, False)
 
 def epoch_callback(epoch):

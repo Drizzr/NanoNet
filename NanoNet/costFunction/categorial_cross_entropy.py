@@ -11,7 +11,7 @@ class CategorialCrossEntropy(CostFunction):
 
     def forward(self, a, y):
         if a.ndim != 1:
-            out =  np.nan_to_num(np.dot(y, -np.log(a.T))).mean()
+            out =  np.nan_to_num(np.diagonal(np.dot(y, -np.log(a.T)))).mean()
         else:
             out = np.nan_to_num(np.dot(y, -np.log(a))).mean()
         if self.l1:

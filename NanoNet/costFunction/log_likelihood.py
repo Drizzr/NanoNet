@@ -8,12 +8,20 @@ class LogLikelihood(CostFunction):
     def __init__(self, net, l1, l2, classify=True, lambd=0.0):
         super().__init__(net, l1, l2, classify, lambd)
 
-    @staticmethod
-    def forward(a, y):
+    def forward(self, a, y):
 
+        if y.ndim == 1:
+            out =  -np.log(a[np.argmax(y)])
+        else:
+            out = -np.log(a[[i for i in range(len(y))], np.argmax(y, axis=-1)]).mean()
+
+        if self.l1:
+            return out + self.l1_regularization()
         
+        elif self.l2:
+            return out + self.l2_regularization()
 
-        return -np.log(a[:,np.argmax(y, axis=-1)])
+        return out
 
 
     @staticmethod

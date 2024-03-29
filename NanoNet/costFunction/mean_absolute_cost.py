@@ -13,11 +13,11 @@ class MeanAbsoluteCost(CostFunction):
     def forward(self, a, y):
 
         if self.l1:
-            return np.absolute(y-a).mean() + self.l1_regularization()
+            return np.nan_to_num(np.absolute(y-a).mean(axis=-1)) + self.l1_regularization()
         elif self.l2:
-            return np.absolute(y-a).mean() + self.l2_regularization()
+            return np.nan_to_num(np.absolute(y-a).mean(axis=-1)) + self.l2_regularization()
 
-        return np.absolute(y-a).mean()
+        return np.nan_to_num(np.absolute(y-a).mean())
 
     @staticmethod
     def delta(z, a, y, activation):

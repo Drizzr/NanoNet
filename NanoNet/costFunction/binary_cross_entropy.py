@@ -2,7 +2,7 @@ from .base import CostFunction
 import numpy as np
 
 
-class CrossEntropy(CostFunction):
+class BinaryCrossEntropy(CostFunction):
 
     __name__ = "CrossEntropy"
 
