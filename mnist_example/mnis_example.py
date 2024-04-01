@@ -13,8 +13,8 @@ validation_data = MNIST_DataSet_PKL('mnist_example/data/mnist.pkl.gz', type='val
 training_loader = DataLoader(training_data, batch_size=23, shuffle=True, drop_last=False)
 
 
-net = Network([784, 50, 10], [Sigmoid(), Sigmoid()])
-cost_function = QuadraticCost(net, False, False)
+net = Network([784, 50, 10], [Sigmoid(), SoftMax()])
+cost_function = CategorialCrossEntropy(net, False, False)
 
 def epoch_callback(epoch):
     cost = 0.0
