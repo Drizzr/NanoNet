@@ -22,4 +22,4 @@ class CategorialCrossEntropy(CostFunction):
     
     @staticmethod
     def delta(z, a, y, activation=None):
-        return (a-y)
+        return (a-y)/a.shape[0]
