@@ -118,3 +118,5 @@ If you want to infer some data, just call:
 ```python
 net.feedforward(x)
 ```
+
+For more details check out the mnist_example.py file!
