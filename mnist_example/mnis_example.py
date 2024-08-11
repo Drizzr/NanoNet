@@ -18,32 +18,32 @@ cost_function = LogLikelihood(net, False, False, lambd=0.1)
 
 def epoch_callback(epoch):
     cost = 0.0
-    for x, y in training_data:
+    for x, y in validation_data:
 
         a = net.feedforward(x)
 
-        cost += cost_function.forward(a, y) / len(training_data)
+        cost += cost_function.forward(a, y) / len(validation_data)
     
     print(f"loss: {cost}")
 
     results = [(np.argmax(net.feedforward(x)), np.argmax(y))
-                        for (x, y) in training_data]
+                        for (x, y) in validation_data]
     
-    print(f"Validation accuracy: {round(sum(int(x == y) for (x, y) in results) / len(training_data) * 100, 4)}%")
+    print(f"Validation accuracy: {round(sum(int(x == y) for (x, y) in results) / len(validation_data) * 100, 4)}%")
 
 optimizer = ADAM(net, cost_function, 0.03)
 net.train(100, optimizer=optimizer, training_dataset=training_loader, epoch_callback = epoch_callback)
 
 
+
+#net.save("data.json")
+
 """
-net.save("data.json")
-
-
 net = load_from_file(filename="mnist_example/example_params.json")
 
 #print(net.feedforward(training_data[0][0], batch=False))
 
 results = [(np.argmax(net.feedforward(x)), np.argmax(y))
-                        for (x, y) in training_data]
+                        for (x, y) in validation_data]
 
-print(f"Validation accuracy: {sum(int(x == y) for (x, y) in results) / len(training_data) * 100}%")"""
+print(f"Validation accuracy: {sum(int(x == y) for (x, y) in results) / len(validation_data) * 100}%")"""

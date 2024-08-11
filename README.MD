@@ -87,7 +87,7 @@ class MNIST_DataSet_PKL(Dataset):
         return self.data[0][idx], vectorized_result(self.data[1][idx], 10) # format: (784), (10)
 ```
 
-(For a custom dataset, you will need to override the `__len__` and `__getitem__` methods. This is very similar to PyTorch by design and should be compatible.)
+(For a custom dataset, you will need to override the `__len__` and `__getitem__` methods. This is very similar to PyTorch by design and should be compatible. The libary also provides a dataloader similar to PyTorch)
 
 Every neural network instance has a `train` method, which can be called as follows:
 
