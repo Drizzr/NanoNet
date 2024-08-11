@@ -14,7 +14,7 @@ training_loader = DataLoader(training_data, batch_size=23, shuffle=True, drop_la
 
 
 net = Network([784, 50, 10], [Sigmoid(), SoftMax()])
-cost_function = CategorialCrossEntropy(net, False, False)
+cost_function = LogLikelihood(net, False, False, lambd=0.1)
 
 def epoch_callback(epoch):
     cost = 0.0
@@ -22,16 +22,16 @@ def epoch_callback(epoch):
 
         a = net.feedforward(x)
 
-        cost += cost_function.forward(a, y)/ len(training_data)
+        cost += cost_function.forward(a, y) / len(training_data)
     
-    print(f"Cost: {cost}")
+    print(f"loss: {cost}")
 
     results = [(np.argmax(net.feedforward(x)), np.argmax(y))
                         for (x, y) in training_data]
     
-    print(f"Validation accuracy: {sum(int(x == y) for (x, y) in results) / len(training_data) * 100}%")
+    print(f"Validation accuracy: {round(sum(int(x == y) for (x, y) in results) / len(training_data) * 100, 4)}%")
 
-optimizer = SGD_Momentum(net, cost_function, 0.5)
+optimizer = ADAM(net, cost_function, 0.03)
 net.train(100, optimizer=optimizer, training_dataset=training_loader, epoch_callback = epoch_callback)
 
 """

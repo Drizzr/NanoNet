@@ -31,6 +31,7 @@ class Optimizer:
         activations = [x] 
         zs = [] 
 
+        # passing the input through the network and saving the activations and z values (z = wx + b without activation function applied)
         joined = list(zip(self.NETWORK.biases,self.NETWORK.weights))
         for i in range(0, self.NETWORK.num_layers-1):
             z = np.dot(activations[-1], joined[i][1]) + joined[i][0]
@@ -40,21 +41,24 @@ class Optimizer:
             activations.append(activation)
 
         
+        # creating a delta for the output layer for each sample in the mini-batch
         delta = self.COST_FUNCTION.delta(zs[-1], activations[-1], y, self.NETWORK.a_functions[-1])
 
-
+        # since the estimated gradient is the mean of the gradients of each sample in the mini-batch, we have to divide the gradient by the mini-batch size
         nabla_b[-1] = delta.mean(0)
+        # basically the same as nabla_b[-1] = delta.mean(0) but with a few more steps and tricks
         nabla_w[-1] = np.dot(delta.T, activations[-2]).T / mini_batch_size
 
+        # backpropagating the error through the network
         for l in range(2, self.NETWORK.num_layers):
             z = zs[-l]
             sp = self.NETWORK.a_functions[-l].derivative(z)
             delta = np.dot(self.NETWORK.weights[-l+1], delta.T).T * sp
 
             nabla_b[-l] = delta.mean(0)
-            #print((self.NETWORK.biases[-l]-nabla_b[-l]).shape)
             nabla_w[-l] = np.dot(delta.T, activations[-l-1]).T / mini_batch_size
 
+        # adding the regularization term to the gradient
         if self.COST_FUNCTION.l2:
             for i in range(len(nabla_w)):
                 nabla_w[i] += self.COST_FUNCTION.lambd/mini_batch_size * self.NETWORK.weights[i]
