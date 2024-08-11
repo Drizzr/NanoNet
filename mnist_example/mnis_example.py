@@ -34,6 +34,7 @@ def epoch_callback(epoch):
 optimizer = ADAM(net, cost_function, 0.03)
 net.train(100, optimizer=optimizer, training_dataset=training_loader, epoch_callback = epoch_callback)
 
+
 """
 net.save("data.json")
 
@@ -41,7 +42,6 @@ net.save("data.json")
 net = load_from_file(filename="mnist_example/example_params.json")
 
 #print(net.feedforward(training_data[0][0], batch=False))
-#net.train(10, plot=True, monitor_training_cost=False, monitor_training_accuracy=False, monitor_test_cost=True, monitor_test_accuracy=True, test_convert=True)
 
 results = [(np.argmax(net.feedforward(x)), np.argmax(y))
                         for (x, y) in training_data]
