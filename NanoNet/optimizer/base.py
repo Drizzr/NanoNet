@@ -1,76 +1,114 @@
 import numpy as np
-import random
-from NanoNet.Exceptions import RegularizationError, NetworkConfigError
+from abc import ABC, abstractmethod
+from NanoNet.Exceptions import NetworkConfigError
 
-class Optimizer:
+class Optimizer(ABC):
     
-    def __init__(self, network : object, cost_function : object) -> None:
-        
+    def __init__(self, network: object, cost_function: object) -> None:
         self.NETWORK = network
         self.COST_FUNCTION = cost_function
 
-        
-        if cost_function.__name__ in ["CategorialCrossEntropy", "LogLikelihood"] and self.NETWORK.a_functions[-1].__name__ != "SoftMax":
-            raise NetworkConfigError("The LogLikelihood, CategorialCrossEntropy cost-function can only be used in combination with a sofMax-ouput layer!")
+        # Ensure the Network and Optimizer are linked
+        if hasattr(network, 'optimizer'):
+            network.optimizer = self
 
-        if cost_function.__name__ == "CrossEntropy" and self.NETWORK.a_functions[-1].__name__ != "Sigmoid":
-            raise NetworkConfigError("The BinaryCrossEntropy cost-function can only be used in combination with a sigmoid-ouput layer!")
+        # Logic for Configuration Validation
+        # Softmax requires CCE or LogLikelihood
+        output_activation = self.NETWORK.a_functions[-1].__name__
+        cost_name = self.COST_FUNCTION.__name__
+
+        if cost_name in ["CategorialCrossEntropy", "LogLikelihood"]:
+            if output_activation != "SoftMax":
+                raise NetworkConfigError(
+                    f"{cost_name} requires a SoftMax output layer, but found {output_activation}."
+                )
+
+        if cost_name == "CrossEntropy": # This matches your BinaryCrossEntropy.__name__
+            if output_activation != "Sigmoid":
+                raise NetworkConfigError(
+                    f"BinaryCrossEntropy requires a Sigmoid output layer, but found {output_activation}."
+                )
         
-        if self.NETWORK.a_functions[-1].__name__ == "SoftMax" and cost_function.__name__ not in ["CategorialCrossEntropy", "LogLikelihood"]:
-            raise NetworkConfigError("The SoftMax activation-function can only be used in combination with the Loglikelihood or CategorialCrossEntropy-cost-function!")
-        
+        if output_activation == "SoftMax" and cost_name not in ["CategorialCrossEntropy", "LogLikelihood"]:
+             raise NetworkConfigError(
+                "SoftMax activation can only be used with LogLikelihood or CategorialCrossEntropy."
+            )
 
     def backprop(self, x, y):
-
-        mini_batch_size = x.shape[0]
+        batch_size = x.shape[0]
         
-        nabla_b = [np.zeros(b.shape) for b in self.NETWORK.biases]
-        nabla_w = [np.zeros(w.shape) for w in self.NETWORK.weights]
-        # feedforward
-        activation = x
+        # 1. Forward Pass
         activations = [x] 
         zs = [] 
+        masks = [] # Store dropout masks
 
-        # passing the input through the network and saving the activations and z values (z = wx + b without activation function applied)
-        joined = list(zip(self.NETWORK.biases,self.NETWORK.weights))
-        for i in range(0, self.NETWORK.num_layers-1):
-            z = np.dot(activations[-1], joined[i][1]) + joined[i][0]
+        for i in range(self.NETWORK.num_layers - 1):
+            z = np.dot(activations[-1], self.NETWORK.weights[i]) + self.NETWORK.biases[i]
             zs.append(z)
-
+            
             activation = self.NETWORK.a_functions[i].forward(z)
+
+            # --- DROPOUT FORWARD ---
+            # Only apply if training, dropout_rate > 0, and NOT the output layer
+            if self.NETWORK.is_training and self.NETWORK.dropout_rate > 0 and i < self.NETWORK.num_layers - 2:
+                p = self.NETWORK.dropout_rate
+                mask = (np.random.rand(*activation.shape) > p) / (1.0 - p)
+                activation *= mask
+                masks.append(mask)
+            else:
+                masks.append(None)
+
             activations.append(activation)
 
-        
-        # creating a delta for the output layer for each sample in the mini-batch
+        # 2. Calculate Loss (Cost Function already handles L1/L2 penalty in its .forward)
+        batch_loss = self.COST_FUNCTION.forward(activations[-1], y)
+
+        # 3. Backward Pass
+        nabla_b = [None] * len(self.NETWORK.biases)
+        nabla_w = [None] * len(self.NETWORK.weights)
+
+        # Output layer delta
         delta = self.COST_FUNCTION.delta(zs[-1], activations[-1], y, self.NETWORK.a_functions[-1])
+        
+        nabla_b[-1] = np.sum(delta, axis=0) 
+        nabla_w[-1] = np.dot(activations[-2].T, delta)
 
-        # since the estimated gradient is the mean of the gradients of each sample in the mini-batch, we have to divide the gradient by the mini-batch size
-        nabla_b[-1] = delta.mean(0)
-        # basically the same as nabla_b[-1] = delta.mean(0) but with a few more steps and tricks
-        nabla_w[-1] = np.dot(delta.T, activations[-2]).T / mini_batch_size
-
-        # backpropagating the error through the network
+        # Backpropagate through hidden layers
         for l in range(2, self.NETWORK.num_layers):
             z = zs[-l]
             sp = self.NETWORK.a_functions[-l].derivative(z)
-            delta = np.dot(self.NETWORK.weights[-l+1], delta.T).T * sp
+            
+            delta = np.dot(delta, self.NETWORK.weights[-l+1].T) * sp
+            
+            # --- DROPOUT BACKWARD ---
+            # If a neuron was silenced forward, we silence the gradient backward
+            if masks[-l] is not None:
+                delta *= masks[-l]
 
-            nabla_b[-l] = delta.mean(0)
-            nabla_w[-l] = np.dot(delta.T, activations[-l-1]).T / mini_batch_size
+            nabla_b[-l] = np.sum(delta, axis=0)
+            nabla_w[-l] = np.dot(activations[-l-1].T, delta)
 
-        # adding the regularization term to the gradient
-        if self.COST_FUNCTION.l2:
+        # 4. REGULARIZATION (The part we can't forget!)
+        # Regularization is independent of Dropout masks
+        if self.COST_FUNCTION.l2 or self.COST_FUNCTION.l1:
+            lambd = self.COST_FUNCTION.lambd
             for i in range(len(nabla_w)):
-                nabla_w[i] += self.COST_FUNCTION.lambd/mini_batch_size * self.NETWORK.weights[i]
-        elif self.COST_FUNCTION.l1:
-            for i in range(len(nabla_w)):
-                nabla_w[i] += self.COST_FUNCTION.lambd/mini_batch_size * np.sign(self.NETWORK.weights[i])
+                if self.COST_FUNCTION.l2:
+                    # L2 Gradient: lambda * weight
+                    nabla_w[i] += lambd * self.NETWORK.weights[i]
+                elif self.COST_FUNCTION.l1:
+                    # L1 Gradient: lambda * sign(weight)
+                    nabla_w[i] += lambd * np.sign(self.NETWORK.weights[i])
 
-        return (nabla_b, nabla_w)
-
+        return nabla_b, nabla_w, batch_loss
 
     def step(self, x, y):
-        self.update_mini_batch(x, y)
+        """
+        Updates the network parameters and returns the loss for this batch.
+        """
+        return self.update_mini_batch(x, y)
 
-        
-    
+    @abstractmethod
+    def update_mini_batch(self, x, y):
+        """Subclasses (SGD, ADAM, etc.) must implement this."""
+        pass

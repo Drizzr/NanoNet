@@ -12,24 +12,22 @@ class DataLoader():
         self.sampler = Sampler(self.dataset, self.shuffle)
     
     def __iter__(self):
-
-        batch_x = [0] * self.batch_size
-        batch_y = [0] * self.batch_size
-        idx_in_batch = 0
+        batch_x = []
+        batch_y = []
+        
         for idx in self.sampler:
-            batch_x[idx_in_batch] = self.dataset[idx][0]
-            batch_y[idx_in_batch] = self.dataset[idx][1]
-            idx_in_batch += 1
-            if idx_in_batch == self.batch_size:
+            x, y = self.dataset[idx]
+            batch_x.append(x)
+            batch_y.append(y)
+            
+            if len(batch_x) == self.batch_size:
                 yield np.array(batch_x), np.array(batch_y)
-                idx_in_batch = 0
-                batch_x = [0] * self.batch_size
-                batch_y = [0] * self.batch_size
-        if idx_in_batch > 0:
-            if self.drop_last:
-                pass
-            else:
-                yield np.array(batch_x[:idx_in_batch]), np.array(batch_y[:idx_in_batch])
+                batch_x = []
+                batch_y = []
+        
+        # Handle the last "leftover" batch
+        if len(batch_x) > 0 and not self.drop_last:
+            yield np.array(batch_x), np.array(batch_y)
     
     def __len__(self) -> int:
         # Can only be called if self.sampler has __len__ implemented

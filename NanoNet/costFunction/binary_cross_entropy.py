@@ -6,26 +6,36 @@ class BinaryCrossEntropy(CostFunction):
 
     __name__ = "CrossEntropy"
 
-    def __init__(self, net, l1, l2, classify=True, lambd=0.0):
-        super().__init__(net, l1, l2, classify, lambd)
+    def __init__(self, net, l1, l2, lambd=0.0):
+        super().__init__(net, l1, l2, lambd)
 
     def forward(self, a, y):
-        """Return the cost associated with an output ``a`` and desired output
-        ``y``.  Note that np.nan_to_num is used to ensure numerical
-        stability.  In particular, if both ``a`` and ``y`` have a 1.0
-        in the same slot, then the expression (1-y)*np.log(1-a)
-        returns nan.  The np.nan_to_num ensures that that is converted
-        to the correct value (0.0).
-
-        When only a is close to one the function returns inf making learning impossible
-
         """
-        if self.l1:
-            return np.sum(np.nan_to_num(-y*np.log(a)-(1-y)*np.log(1-a)), axis=-1).mean() + self.l1_regularization()
-        elif self.l2:
-            return np.sum(np.nan_to_num(-y*np.log(a)-(1-y)*np.log(1-a)), axis=-1).mean() + self.l2_regularization()
+        Return the cost associated with an output ``a`` and desired output ``y``.
+        
+        Uses np.clip to ensure numerical stability by preventing log(0) which
+        results in infinity.
+        """
+        # 1. Numerical stability: clip 'a' so it's never exactly 0 or 1
+        # 1e-15 is a standard epsilon value for this purpose
+        epsilon = 1e-15
+        a_clipped = np.clip(a, epsilon, 1.0 - epsilon)
 
-        return np.sum(np.nan_to_num(-y*np.log(a)-(1-y)*np.log(1-a)), axis=-1).mean()
+        # 2. Calculate the core Binary Cross Entropy cost
+        # We calculate the sum of errors for each sample, then take the mean of the batch
+        # Formula: -[y*log(a) + (1-y)*log(1-a)]
+        sample_costs = - (y * np.log(a_clipped) + (1 - y) * np.log(1 - a_clipped))
+        
+        # Sum over the last axis (output neurons) and mean over the first (batch size)
+        cost = np.sum(sample_costs, axis=-1).mean()
+
+        # 3. Add Regularization (if any)
+        if self.l1:
+            cost += self.l1_regularization()
+        elif self.l2:
+            cost += self.l2_regularization()
+
+        return cost
 
     @staticmethod
     def delta(z, a, y, activation=None):

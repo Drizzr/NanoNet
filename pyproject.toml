@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "NanoNet-ML"  
+version = "0.1.0"
+authors = [
+  { name="Drizzr"},
+]
+description = "A lightweight dense neural network library inspired by Aaron Courville."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy>=1.26.4",
+    "Werkzeug>=3.0.1",
+    "MarkupSafe>=2.1.5",
+    "tqdm>=4.66.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["NanoNet*"]
+
+
+[tool.setuptools.package-data]
+"NanoNet.data" = ["*.gz"]
+
+[project.scripts]
+nanonet-mnist = "examples.mnist_example:main"

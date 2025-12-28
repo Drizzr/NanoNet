@@ -4,8 +4,7 @@ from NanoNet.Exceptions.errors import NetworkConfigError, RegularizationError
 class CostFunction:
 
 
-    def __init__(self, net = None, l1=False, l2=False, classify=True, lambd=0.0):
-        self.classify = classify
+    def __init__(self, net = None, l1=False, l2=False, lambd=0.0):
         self.l1 = l1
         self.l2 = l2
         self.net = net
@@ -14,13 +13,10 @@ class CostFunction:
         if l1 and l2:
             raise RegularizationError("Only one regularization-method can be used at the same time!")
         
-        if not self.classify and self.__name__ not in ["QuadraticCost", "MeanAbsoluteCost"]:
-            raise NetworkConfigError("Regresssion-type Neural Networks can only be used in combination with the QuadraticCost-Function!")
-        
-
     def l2_regularization(self):
-        return self.lambd*np.sum([np.sum(w**2) for w in self.net.weights])
-    
+        # Standard: 0.5 * lambda * sum of weights squared
+        return 0.5 * self.lambd * sum(np.sum(w**2) for w in self.net.weights)
 
     def l1_regularization(self):
-        return self.lambd*np.sum([np.sum(np.abs(w)) for w in self.net.weights])
+        # Standard: lambda * sum of absolute weights
+        return self.lambd * sum(np.sum(np.abs(w)) for w in self.net.weights)

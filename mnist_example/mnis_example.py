@@ -1,49 +1,43 @@
-from NanoNet.network import Network, load_from_file
-from NanoNet.optimizer import SGD, SGD_Momentum, RMSPromp, ADAM
-from NanoNet.costFunction import QuadraticCost, LogLikelihood, CategorialCrossEntropy, BinaryCrossEntropy, MeanAbsoluteCost
-from NanoNet.activationFunction import Sigmoid, ReLu, SoftMax
-from NanoNet.data.examples import MNIST_DataSet_PKL
-from NanoNet.data import DataLoader
 import numpy as np
+from NanoNet import Network, ADAM, CategorialCrossEntropy, Sigmoid, SoftMax, DataLoader, ReLu, load_from_file
+from NanoNet.data.examples import MNIST_DataSet_PKL
 
 
-training_data = MNIST_DataSet_PKL('mnist_example/data/mnist.pkl.gz', type='train')
-validation_data = MNIST_DataSet_PKL('mnist_example/data/mnist.pkl.gz', type='validation')
+def main():
+    # Note: No path needed now, it's automatic!
+    training_data = MNIST_DataSet_PKL(type='train')
+    validation_data = MNIST_DataSet_PKL(type='validation')
 
-training_loader = DataLoader(training_data, batch_size=23, shuffle=True, drop_last=False)
+    training_loader = DataLoader(training_data, batch_size=23, shuffle=True, drop_last=False)
 
+    net = Network([784, 100, 100, 50, 10], [ReLu(), ReLu(), ReLu(), SoftMax()], dropout_rate=0.2)
+    cost_function = CategorialCrossEntropy(net, False, True, lambd=0.001)
 
-net = Network([784, 50, 10], [Sigmoid(), SoftMax()])
-cost_function = LogLikelihood(net, False, False, lambd=0.1)
+    from tqdm import tqdm # Import this to use tqdm.write
 
-def epoch_callback(epoch):
-    cost = 0.0
-    for x, y in validation_data:
+    def epoch_callback(epoch):
+        # Performance calculation
+        results = [(np.argmax(net.feedforward(x)), np.argmax(y))
+                            for (x, y) in validation_data]
+        acc = sum(int(x == y) for (x, y) in results) / len(validation_data)
+        
+        # Optional: If you still want a clean line in the console history
+        tqdm.write(f"Completed Epoch {epoch}: Val Acc = {acc:.2%}")
 
-        a = net.feedforward(x)
+        # Return this to keep it visible in the live progress bar
+        return {}
 
-        cost += cost_function.forward(a, y) / len(validation_data)
-    
-    print(f"loss: {cost}")
+    optimizer = ADAM(net, cost_function, 0.0005)
+    net.train(10, optimizer=optimizer, training_dataset=training_loader, epoch_callback=epoch_callback)
+    #net.save("mnist_model.json")
 
+if __name__ == "__main__":
+    """net = load_from_file("mnist_example/mnist_model.json")
+    net.eval_mode()
+    test_data = MNIST_DataSet_PKL(type='test')
     results = [(np.argmax(net.feedforward(x)), np.argmax(y))
-                        for (x, y) in validation_data]
+                        for (x, y) in test_data]
+    acc = sum(int(x == y) for (x, y) in results) / len(test_data)
+    print(f"Test Accuracy: {acc:.2%}")"""
     
-    print(f"Validation accuracy: {round(sum(int(x == y) for (x, y) in results) / len(validation_data) * 100, 4)}%")
-
-optimizer = ADAM(net, cost_function, 0.03)
-net.train(100, optimizer=optimizer, training_dataset=training_loader, epoch_callback = epoch_callback)
-
-
-
-#net.save("data.json")
-
-"""
-net = load_from_file(filename="mnist_example/example_params.json")
-
-#print(net.feedforward(training_data[0][0], batch=False))
-
-results = [(np.argmax(net.feedforward(x)), np.argmax(y))
-                        for (x, y) in validation_data]
-
-print(f"Validation accuracy: {sum(int(x == y) for (x, y) in results) / len(validation_data) * 100}%")"""
+    main()

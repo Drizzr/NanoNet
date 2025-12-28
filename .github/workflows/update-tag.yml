@@ -1,0 +1,39 @@
+name: Update Latest Tag
+
+on:
+  push:
+    branches:
+      - main  # Trigger whenever you push to main
+
+jobs:
+  update-tag:
+    # CHANGE THIS to your actual GitHub username and repo name
+    if: github.repository == 'YourUsername/NanoNet' 
+    runs-on: ubuntu-latest
+    
+    # Required to give the action permission to push tags back to your repo
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Gets all history so tags can be managed
+
+      - name: Update and push latest tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Delete the 'latest' tag locally if it exists
+          git tag -d latest || true
+          
+          # Delete the 'latest' tag on the remote (GitHub) if it exists
+          git push origin :refs/tags/latest || true
+          
+          # Create the tag at the current commit
+          git tag latest
+          
+          # Push the new tag to GitHub
+          git push origin latest

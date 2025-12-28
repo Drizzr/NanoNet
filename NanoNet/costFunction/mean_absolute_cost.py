@@ -6,8 +6,8 @@ class MeanAbsoluteCost(CostFunction):
 
     __name__ = "MeanAbsoluteCost"
 
-    def __init__(self, net, l1, l2, classify=True, lambd=0.0):
-        super().__init__(net, l1, l2, classify, lambd)
+    def __init__(self, net, l1, l2, lambd=0.0):
+        super().__init__(net, l1, l2, lambd)
 
 
     def forward(self, a, y):
