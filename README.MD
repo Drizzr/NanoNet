@@ -21,7 +21,7 @@ Install directly from GitHub using `pip`:
 
 ```bash
 # Install the latest stable version
-pip install git+https://github.com/YourUsername/NanoNet.git@latest
+pip install git+https://github.com/Drizzr/NanoNet.git@latest
 ```
 
 ---
