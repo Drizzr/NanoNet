@@ -3,10 +3,10 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "NanoNet-ML"  
+name = "NanoNet-ML"
 version = "0.1.0"
 authors = [
-  { name="Drizzr"},
+  { name="Drizzr" },
 ]
 description = "A lightweight dense neural network library inspired by Aaron Courville."
 readme = "README.md"
@@ -18,18 +18,18 @@ classifiers = [
 ]
 dependencies = [
     "numpy>=1.26.4",
-    "Werkzeug>=3.0.1",
-    "MarkupSafe>=2.1.5",
     "tqdm>=4.66.0",
 ]
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["NanoNet*"]
+[project.scripts]
+# This creates the 'nanonet-mnist' command in the terminal
+nanonet-mnist = "NanoNet_examples.mnist_example:main"
 
+[tool.setuptools]
+# This tells setuptools where to find your code
+packages = { find = { where = ["src"], include = ["*"] } }
 
 [tool.setuptools.package-data]
+# This ensures the MNIST data file is included in the installation
 "NanoNet.data" = ["*.gz"]
 
-[project.scripts]
-nanonet-mnist = "examples.mnist_example:main"
