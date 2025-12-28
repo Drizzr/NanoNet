@@ -8,7 +8,7 @@ on:
 jobs:
   update-tag:
     # CHANGE THIS to your actual GitHub username and repo name
-    if: github.repository == 'YourUsername/NanoNet' 
+    if: github.repository == 'Drizzr/NanoNet' 
     runs-on: ubuntu-latest
     
     # Required to give the action permission to push tags back to your repo
